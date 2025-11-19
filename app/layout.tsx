@@ -1,8 +1,8 @@
 "use client";
 
 import { Mulish } from "next/font/google";
-// import { SessionProvider } from "next-auth/react";
 import "./globals.css";
+import { AuthProvider } from "@/lib/auth-context";
 
 const mulish = Mulish({ subsets: ["latin"] });
 const title = "Pay Wise";
@@ -18,8 +18,7 @@ export default function RootLayout({
         <title>{title}</title>
       </head>
       <body className={mulish.className}>
-        {children}
-        {/* <SessionProvider>{children}</SessionProvider> */}
+        <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
   );

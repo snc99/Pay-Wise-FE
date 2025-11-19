@@ -5,16 +5,18 @@ import { useState, useEffect } from "react";
 import { Eye, EyeOff, Loader2, User } from "lucide-react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { apiFetch } from "@/lib/api";
+import { useAuth } from "@/lib/auth-context";
 
 export default function LoginPage() {
+  const router = useRouter();
+  const { login, user, isLoading: authLoading } = useAuth();
+
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [currentShape, setCurrentShape] = useState(0);
-  const router = useRouter();
 
   const togglePasswordVisibility = () => setShowPassword((s) => !s);
 
@@ -25,6 +27,14 @@ export default function LoginPage() {
     "rounded-lg",
   ];
 
+  // Redirect ke dashboard kalau sudah login
+  useEffect(() => {
+    if (!authLoading && user) {
+      router.push("/dashboard");
+    }
+  }, [user, authLoading, router]);
+
+  // Animation shapes
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentShape((prev) => (prev + 1) % shapes.length);
@@ -36,7 +46,6 @@ export default function LoginPage() {
     e.preventDefault();
     setError("");
 
-    // ✅ Trim username DAN password
     const trimmedUsername = username.trim();
     const trimmedPassword = password.trim();
 
@@ -48,40 +57,17 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      console.log("🚀 Sending login request..."); // Debug
-      console.log("📤 Username:", trimmedUsername); // Debug
-      console.log("📤 Password length:", trimmedPassword.length); // Debug (jangan log password!)
-
-      // ✅ Request login ke backend
-      const data = await apiFetch("/auth/login", {
-        method: "POST",
-        body: JSON.stringify({
-          username: trimmedUsername,
-          password: trimmedPassword,
-        }),
-        auth: false,
-      });
-
-      console.log("📥 Response:", data); // Debug
-
-      // ✅ Jika login berhasil
-      if (data.success) {
-        console.log("✅ Login berhasil!");
-        console.log("👤 User:", data.user);
-        console.log("🍪 Cookies:", document.cookie);
-
-        // ✅ Force reload untuk memastikan cookie terbaca
-        window.location.href = "/dashboard";
-      } else {
-        setError(data.message || "Login gagal");
-      }
+      // ✅ Pakai login dari auth context
+      await login(trimmedUsername, trimmedPassword);
+      // Auto redirect handled by auth context
     } catch (err: any) {
-      // console.error("❌ Login error:", err);
-
-      // ✅ Show detailed error message
-      if (err.message.includes("401")) {
+      // ✅ Error handling yang lebih simple
+      if (err.message.includes("401") || err.message.includes("salah")) {
         setError("Username atau password salah");
-      } else if (err.message.includes("400")) {
+      } else if (
+        err.message.includes("400") ||
+        err.message.includes("Validasi")
+      ) {
         setError("Data tidak valid. Periksa input Anda.");
       } else if (
         err.message.includes("network") ||
@@ -95,6 +81,18 @@ export default function LoginPage() {
       setIsLoading(false);
     }
   };
+
+  // Show loading while checking auth
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <Loader2 className="animate-spin h-12 w-12 text-blue-600 mx-auto mb-4" />
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex bg-gray-50">
@@ -169,13 +167,11 @@ export default function LoginPage() {
                     type="text"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
-                    onBlur={(e) => {
-                      // ✅ Auto-trim saat blur
-                      setUsername(e.target.value.trim());
-                    }}
+                    onBlur={(e) => setUsername(e.target.value.trim())}
                     className="w-full px-4 py-3 pl-10 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition bg-white"
                     placeholder="Masukkan username anda"
                     required
+                    disabled={isLoading}
                     whileFocus={{
                       borderColor: "#3b82f6",
                       boxShadow: "0 0 0 3px rgba(59,130,246,0.1)",
@@ -185,13 +181,6 @@ export default function LoginPage() {
                     <User size={18} />
                   </div>
                 </div>
-                {/* ✅ Debug info - hapus setelah selesai debugging */}
-                {username && (
-                  <p className="text-xs text-gray-400">
-                    Length: {username.length} | Trimmed:{" "}
-                    {username.trim().length}
-                  </p>
-                )}
               </div>
 
               {/* Password */}
@@ -207,6 +196,7 @@ export default function LoginPage() {
                     className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition bg-white pr-10"
                     placeholder="Masukkan password anda"
                     required
+                    disabled={isLoading}
                     whileFocus={{
                       borderColor: "#3b82f6",
                       boxShadow: "0 0 0 3px rgba(59,130,246,0.1)",
@@ -221,6 +211,7 @@ export default function LoginPage() {
                         ? "Sembunyikan password"
                         : "Tampilkan password"
                     }
+                    disabled={isLoading}
                   >
                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
@@ -241,9 +232,9 @@ export default function LoginPage() {
               {/* Submit */}
               <motion.button
                 type="submit"
-                className="w-full bg-linear-to-r from-blue-500 to-blue-600 text-white py-3 px-4 rounded-xl font-medium hover:from-blue-600 hover:to-blue-700 transition duration-300 relative overflow-hidden disabled:opacity-60"
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
+                className="w-full bg-linear-to-r from-blue-500 to-blue-600 text-white py-3 px-4 rounded-xl font-medium hover:from-blue-600 hover:to-blue-700 transition duration-300 relative overflow-hidden disabled:opacity-60 disabled:cursor-not-allowed"
+                whileHover={{ scale: isLoading ? 1 : 1.02 }}
+                whileTap={{ scale: isLoading ? 1 : 0.98 }}
                 disabled={isLoading || !username.trim() || !password}
               >
                 {isLoading ? (

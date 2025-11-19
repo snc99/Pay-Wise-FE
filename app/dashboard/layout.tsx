@@ -1,7 +1,8 @@
 "use client";
-import { useEffect, useState } from "react";
+
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { apiFetch } from "@/lib/api";
+import { useAuth } from "@/lib/auth-context";
 
 import { Separator } from "@/components/ui/separator";
 import {
@@ -17,32 +18,17 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
-  const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState<any | null>(null);
+  const { user, isLoading } = useAuth();
 
+  // Redirect ke login kalau belum auth
   useEffect(() => {
-    // Backend akan cek cookie pw_token otomatis
-    (async () => {
-      try {
-        const data = await apiFetch("/auth/me", {
-          method: "GET",
-        });
+    if (!isLoading && !user) {
+      router.replace("/auth/login");
+    }
+  }, [user, isLoading, router]);
 
-        if (data?.success && data?.user) {
-          setUser(data.user);
-        } else {
-          // Jika response tidak ada user, redirect ke login
-          router.replace("/auth/login");
-        }
-      } catch (err) {
-        router.replace("/auth/login");
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, [router]);
-
-  if (loading) {
+  // Show loading state
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="text-center">
@@ -53,16 +39,13 @@ export default function DashboardLayout({
     );
   }
 
-  // ✅ Jika user null setelah loading, jangan render apapun
-  // (user akan di-redirect ke login di useEffect)
+  // Show nothing while redirecting
   if (!user) {
     return null;
   }
 
-  const isSuperAdmin =
-    Boolean(user) &&
-    (String(user?.role).toLowerCase() === "superadmin" ||
-      (Array.isArray(user?.roles) && user.roles.includes("superadmin")));
+  // Check if user is superadmin
+  const isSuperAdmin = user?.role === "SUPERADMIN";
 
   return (
     <SidebarProvider>
