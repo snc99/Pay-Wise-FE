@@ -1,76 +1,61 @@
-// // Penampung card dashboard
-import React from "react";
+"use client";
 
-export default function DashboardCards() {
-  return <div>dashboard cards</div>;
-}
+import useSWR from "swr";
+import { Users, DollarSign, Wallet } from "lucide-react";
+import { DashboardCard } from "./dashboard-card";
+import { DashboardCardSkeleton } from "./dashboard-card-skeleton";
+import { getDashboardCards, DashboardCardsData } from "@/lib/api/dashboard";
 
-// "use client";
+export const DashboardCards = () => {
+  const { data, error, isLoading, mutate } = useSWR<DashboardCardsData>(
+    "/dashboard/cards",
+    getDashboardCards,
+    {
+      revalidateOnFocus: true, // ✅ Auto refresh saat balik ke tab
+      revalidateOnReconnect: true, // ✅ Auto refresh saat internet balik
+      dedupingInterval: 10000, // ✅ Prevent spam request
+      // NO refreshInterval             ✅ Ga auto-refresh background
+    }
+  );
 
-// import { useEffect, useState } from "react";
-// import { Users, DollarSign, Wallet } from "lucide-react";
-// import { DashboardCard } from "./DashboardCard";
-// import { DashboardCardSkeleton } from "./DashboardCardSkeleton";
+  // Loading state
+  if (isLoading) return <DashboardCardSkeleton />;
 
-// // Tipe data dari API
-// interface DashboardData {
-//   totalUsers: number;
-//   totalPayments: number;
-//   totalDebts: number;
-//   totalPaidUsers: number;
-// }
+  // Error state
+  if (error) {
+    return (
+      <div className="text-red-500">
+        <p>{error.message}</p>
+      </div>
+    );
+  }
 
-// export const DashboardCards = () => {
-//   const [data, setData] = useState<DashboardData | null>(null);
-//   const [loading, setLoading] = useState(true);
+  return (
+    <div className="flex flex-1 flex-col">
+      <div className="grid auto-rows-min gap-4 md:grid-cols-3">
+        <DashboardCard
+          title="Total User"
+          value={data?.totalUsers?.toString() ?? "-"}
+          subtitle="Pengguna"
+          icon={<Users className="h-6 w-6" />}
+        />
 
-//   useEffect(() => {
-//     const fetchDashboard = async () => {
-//       try {
-//         const res = await fetch("/api/dashboard/cards");
-//         const json = await res.json();
-//         setData(json);
-//       } catch (err) {
-//         console.error("Failed to fetch dashboard data:", err);
-//       } finally {
-//         setLoading(false);
-//       }
-//     };
+        <DashboardCard
+          title="Total Pembayaran"
+          value={`Rp ${Number(data?.totalPayments || 0).toLocaleString(
+            "id-ID"
+          )}`}
+          subtitle={`${data?.totalPaidUsers ?? 0} Pengguna`}
+          icon={<DollarSign className="h-6 w-6" />}
+        />
 
-//     fetchDashboard();
-//   }, []);
-
-//   if (loading) return <DashboardCardSkeleton />;
-
-//   return (
-//     <div className="flex flex-1 flex-col ">
-//       <div className="grid auto-rows-min gap-4 md:grid-cols-3">
-//         {/* Card 1 - Total User */}
-//         <DashboardCard
-//           title="Total User"
-//           value={data?.totalUsers.toString() ?? "-"}
-//           subtitle="Pengguna"
-//           icon={<Users className="h-6 w-6" />}
-//         />
-
-//         {/* Card 2 - Total Bayar */}
-//         <DashboardCard
-//           title="Total Bayar"
-//           value={`Rp ${Number(data?.totalPayments || 0).toLocaleString(
-//             "id-ID"
-//           )}`}
-//           subtitle={`${data?.totalPaidUsers ?? 0} Pengguna`}
-//           icon={<DollarSign className="h-6 w-6" />}
-//         />
-
-//         {/* Card 3 - Total Utang */}
-//         <DashboardCard
-//           title="Total Hutang"
-//           value={`Rp ${Number(data?.totalDebts || 0).toLocaleString("id-ID")}`}
-//           subtitle="Pengguna"
-//           icon={<Wallet className="h-6 w-6" />}
-//         />
-//       </div>
-//     </div>
-//   );
-// };
+        <DashboardCard
+          title="Total Hutang"
+          value={`Rp ${Number(data?.totalDebts || 0).toLocaleString("id-ID")}`}
+          subtitle="Pengguna"
+          icon={<Wallet className="h-6 w-6" />}
+        />
+      </div>
+    </div>
+  );
+};

@@ -1,6 +1,6 @@
 "use client";
 
-import DashboardCards from "@/components/dashboard/dashboard-cards";
+import { DashboardCards } from "@/components/dashboard/dashboard-cards";
 import DashboardCharts from "@/components/dashboard/dashboard-charts";
 
 export default function DashboardPage() {

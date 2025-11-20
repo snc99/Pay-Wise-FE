@@ -20,14 +20,12 @@ export default function DashboardLayout({
   const router = useRouter();
   const { user, isLoading } = useAuth();
 
-  // Redirect ke login kalau belum auth
   useEffect(() => {
     if (!isLoading && !user) {
       router.replace("/auth/login");
     }
   }, [user, isLoading, router]);
 
-  // Show loading state
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -39,12 +37,10 @@ export default function DashboardLayout({
     );
   }
 
-  // Show nothing while redirecting
   if (!user) {
     return null;
   }
 
-  // Check if user is superadmin
   const isSuperAdmin = user?.role === "SUPERADMIN";
 
   return (

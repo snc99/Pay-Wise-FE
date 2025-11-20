@@ -1,12 +1,9 @@
 // lib/api/auth.ts
-import { apiFetch } from "../api";
+import { apiFetch } from "./client";
 
-/**
- * Auth API Functions
- */
 export const authAPI = {
   /**
-   * Login user
+   * Login admin
    */
   login: async (username: string, password: string) => {
     return apiFetch("/auth/login", {
@@ -16,7 +13,7 @@ export const authAPI = {
   },
 
   /**
-   * Get current user profile
+   * Get profile info (admin)
    */
   getProfile: async () => {
     return apiFetch("/auth/me", {
@@ -25,7 +22,7 @@ export const authAPI = {
   },
 
   /**
-   * Logout user
+   * Logout
    */
   logout: async () => {
     return apiFetch("/auth/logout", {

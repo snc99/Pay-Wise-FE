@@ -72,7 +72,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.error("Logout error:", error);
     } finally {
       setUser(null);
-      router.push("/auth/login"); // Sesuaikan dengan route login kamu
+      router.push("/auth/login");
     }
   };
 
