@@ -1,67 +1,53 @@
-// lib/api/user.ts
-import { apiFetch } from "./client";
-import type { User } from "@/lib/types/user";
+import { api } from "./axios";
 
-type RawGetUsersRes = {
-  success?: boolean;
-  status?: number;
-  message?: string;
-  data?: { items?: User[] };
-  pagination?: {
-    currentPage?: number;
-    totalPages?: number;
-    totalItems?: number;
-  };
-  [k: string]: any;
+type GetUsersParams = {
+  search?: string;
+  page?: number;
+  limit?: number;
 };
 
-export async function getUsers(
-  params: {
-    search?: string;
-    page?: number;
-    limit?: number;
-  } = {}
-) {
-  const qs = new URLSearchParams();
+export async function getUsers(params: GetUsersParams = {}) {
+  const res = await api.get("/user", {
+    params: {
+      search: params.search,
+      page: params.page,
+      limit: params.limit ?? 7,
+    },
+  });
 
-  if (params.search) qs.set("search", params.search);
-  if (params.page) qs.set("page", String(params.page));
-  qs.set("limit", String(params.limit ?? 7));
-
-  // NOTE: endpoint is singular "/user" per BE
-  const url = `/user${qs.toString() ? `?${qs.toString()}` : ""}`;
-  // debug
-  // console.log("[api] GET", url);
-
-  const res = (await apiFetch(url)) as RawGetUsersRes | any;
-  return res;
+  return res.data;
 }
 
-export async function getUserById(id: string) {
-  return apiFetch(`/user/${id}`);
-}
-
-export async function createUser(body: {
+export async function createUser(payload: {
   name: string;
   phone: string;
-  address?: string | null;
+  address: string;
 }) {
-  return apiFetch(`/user`, {
-    method: "POST",
-    body: JSON.stringify(body),
-  });
+  const res = await api.post("/user", payload);
+  return res.data;
 }
 
 export async function updateUser(
   id: string,
-  body: Partial<{ name: string; phone: string; address?: string | null }>
+  payload: Partial<{
+    name: string;
+    phone: string;
+    address: string;
+  }>,
 ) {
-  return apiFetch(`/user/${id}`, {
-    method: "PUT",
-    body: JSON.stringify(body),
-  });
+  const res = await api.put(`/user/${id}`, payload);
+  return res.data;
 }
 
 export async function deleteUser(id: string) {
-  return apiFetch(`/user/${id}`, { method: "DELETE" });
+  const res = await api.delete(`/user/${id}`);
+  return res.data;
+}
+
+export async function searchUsers(query: string, limit = 10) {
+  const res = await api.get("/user/search", {
+    params: { query, limit },
+  });
+
+  return res.data;
 }

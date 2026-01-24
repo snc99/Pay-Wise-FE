@@ -13,20 +13,18 @@ import { Label } from "@radix-ui/react-label";
 import { Button } from "../ui/button";
 import { FiUserPlus } from "react-icons/fi";
 import type { User } from "@/lib/types/user";
-import { createUser as createUserApi } from "@/lib/api/user";
+import { createUser } from "@/lib/api/user";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
+import { Loader2 } from "lucide-react";
 
 type Props = {
-  /**
-   * Callback dipanggil setelah user berhasil dibuat.
-   * Diberi objek user yang dikembalikan BE (normalized).
-   */
   onCreated?: (user: User) => void;
 };
 
-export default function UserForm({ onCreated }: Props) {
+export default function UserCreateDialog({ onCreated }: Props) {
   const [open, setOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [form, setForm] = useState<{
     name: string;
@@ -56,65 +54,65 @@ export default function UserForm({ onCreated }: Props) {
     };
 
   const validate = () => {
-    const errors: typeof formErrors = {};
-    if (!form.name.trim()) errors.name = "Nama harus diisi";
-    if (!form.phone.trim()) errors.phone = "Nomor telepon harus diisi";
-    // simple phone validation (opsional)
+    const e: Record<string, string> = {};
+    if (!form.name.trim()) e.name = "Nama wajib diisi";
+    if (!form.phone.trim()) e.phone = "Nomor telepon wajib diisi";
     if (form.phone && !/^[0-9+\-\s()]{3,}$/.test(form.phone)) {
-      errors.phone = "Format nomor telepon tidak valid";
+      e.phone = "Format nomor telepon tidak valid";
     }
-    // address optional
-    return errors;
+    return e;
   };
 
-  const handleSubmit = async () => {
+  const submitCreate = async () => {
     const errors = validate();
     if (Object.keys(errors).length > 0) {
       setFormErrors(errors);
       return;
     }
 
-    setIsLoading(true);
+    setIsSubmitting(true);
     try {
-      // call API
-      const res = await createUserApi({
-        name: form.name.trim(),
-        phone: form.phone.trim(),
-        address: form.address.trim() || null,
-      });
-
-      // Normalisasi respons: banyak kemungkinan bentuk
-      // Controller kita return { success, status, message, data: { id, name, ... } }
+      const res = await createUser(form);
       const created = res?.data ?? res;
 
       toast.success(
         created?.name
           ? `${created.name} berhasil ditambahkan`
-          : "User berhasil ditambahkan"
+          : "User berhasil ditambahkan",
       );
 
-      // reset & close
+      onCreated?.(created);
       resetForm();
       setOpen(false);
-
-      // callback ke parent jika ada (FE bisa refresh list)
-      if (onCreated) {
-        // try to pass created user shape; if BE returns wrapper, try to unwrap further
-        const payload = created?.data ?? created;
-        onCreated(payload);
-      }
     } catch (err: any) {
-      console.error("create user error:", err);
-      // coba ambil pesan dari response
-      const msg = err?.message ?? err?.toString?.() ?? "Gagal menambahkan user";
-      toast.error(msg);
+      const apiErrors = err?.response?.data?.errors;
+
+      if (apiErrors && typeof apiErrors === "object") {
+        const fieldErrors: Record<string, string> = {};
+
+        Object.entries(apiErrors).forEach(([field, messages]: any) => {
+          if (Array.isArray(messages) && messages.length > 0) {
+            fieldErrors[field] = messages[0];
+          }
+        });
+
+        setFormErrors(fieldErrors);
+        return;
+      }
+      toast.error("Terjadi kesalahan saat menambahkan user");
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
   };
 
   return (
-    <Dialog open={open} onOpenChange={(v) => setOpen(v)}>
+    <Dialog
+      open={open}
+      onOpenChange={(v) => {
+        setOpen(v);
+        if (!v) resetForm();
+      }}
+    >
       <DialogTrigger asChild>
         <Button
           className="bg-linear-to-r from-blue-500 to-cyan-600 hover:from-blue-600 hover:to-cyan-700 shadow-md hover:shadow-lg transition-all"
@@ -126,30 +124,39 @@ export default function UserForm({ onCreated }: Props) {
       </DialogTrigger>
 
       <DialogContent className="sm:max-w-[500px] rounded-lg">
-        <DialogHeader>
-          <DialogTitle className="text-xl font-bold text-gray-800">
+        <DialogHeader className="space-y-1 border-b pb-4">
+          <DialogTitle className="text-xl font-semibold text-gray-800">
             Tambah User Baru
           </DialogTitle>
+          <p className="text-sm text-muted-foreground">
+            Masukkan informasi user yang akan ditambahkan ke sistem
+          </p>
         </DialogHeader>
 
         <form
           className="grid gap-5 py-4"
           onSubmit={(e) => {
             e.preventDefault();
-            handleSubmit();
+            submitCreate();
           }}
         >
           <div className="space-y-2">
             <Label htmlFor="name" className="text-gray-700 font-medium">
               Nama Lengkap
+              <p className="inline text-red-500 ml-1">*</p>
             </Label>
             <Input
               id="name"
               value={form.name}
               onChange={handleInputChange("name")}
-              className={`${formErrors.name ? "border-red-500" : ""}`}
-              placeholder="Masukkan nama lengkap"
-              disabled={isLoading}
+              className={cn(
+                "focus-visible:ring-2 focus-visible:ring-offset-2",
+                formErrors.name
+                  ? "border-red-500 focus-visible:ring-red-500"
+                  : "focus-visible:ring-blue-500",
+              )}
+              placeholder="Contoh: Andi Pratama"
+              disabled={isSubmitting}
               aria-invalid={!!formErrors.name}
             />
             {formErrors.name && (
@@ -160,14 +167,20 @@ export default function UserForm({ onCreated }: Props) {
           <div className="space-y-2">
             <Label htmlFor="phone" className="text-gray-700 font-medium">
               Nomor Telepon
+              <p className="inline text-red-500 ml-1">*</p>
             </Label>
             <Input
               id="phone"
               value={form.phone}
               onChange={handleInputChange("phone")}
-              className={`${formErrors.phone ? "border-red-500" : ""}`}
-              placeholder="Masukkan nomor telepon"
-              disabled={isLoading}
+              className={cn(
+                "focus-visible:ring-2 focus-visible:ring-offset-2",
+                formErrors.phone
+                  ? "border-red-500 focus-visible:ring-red-500"
+                  : "focus-visible:ring-blue-500",
+              )}
+              placeholder="e.g., 081234567890"
+              disabled={isSubmitting}
               aria-invalid={!!formErrors.phone}
             />
             {formErrors.phone && (
@@ -183,9 +196,14 @@ export default function UserForm({ onCreated }: Props) {
               id="address"
               value={form.address}
               onChange={handleInputChange("address")}
-              className={`${formErrors.address ? "border-red-500" : ""}`}
-              placeholder="Masukkan alamat"
-              disabled={isLoading}
+              className={cn(
+                "focus-visible:ring-2 focus-visible:ring-offset-2",
+                formErrors.address
+                  ? "border-red-500 focus-visible:ring-red-500"
+                  : "focus-visible:ring-blue-500",
+              )}
+              placeholder="Contoh: Jl. Merdeka No. 123, Jakarta"
+              disabled={isSubmitting}
             />
             {formErrors.address && (
               <p className="text-sm text-red-500 mt-1">{formErrors.address}</p>
@@ -201,17 +219,32 @@ export default function UserForm({ onCreated }: Props) {
                 setOpen(false);
               }}
               className="border-gray-300 hover:bg-gray-50"
-              disabled={isLoading}
+              disabled={isSubmitting}
             >
               Batal
             </Button>
 
             <Button
               type="submit"
-              className="bg-linear-to-r from-blue-500 to-cyan-600 hover:from-blue-600 hover:to-cyan-700 shadow-md hover:shadow-lg transition-all"
-              disabled={isLoading}
+              className="
+                bg-linear-to-r from-blue-500 to-cyan-600
+               hover:from-blue-600 hover:to-cyan-700
+                shadow-md hover:shadow-lg
+                transition-all 
+                duration-200
+                gap-3
+                pt-2
+                sm:col-span-2
+                text-sm
+                font-medium
+                rounded-sm"
+              disabled={isSubmitting}
             >
-              {isLoading ? "Menyimpan..." : "Simpan"}
+              {isSubmitting ? (
+                <Loader2 className="h-5 w-5 animate-spin text-white" />
+              ) : (
+                "Simpan"
+              )}
             </Button>
           </div>
         </form>

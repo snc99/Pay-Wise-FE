@@ -51,25 +51,25 @@ export function AppSidebar({
       title: "Pengguna",
       url: "/dashboard/user",
       icon: User,
-      isActive: pathname === "/dashboard/user",
+      isActive: pathname.startsWith("/dashboard/user"),
     },
     {
       title: "Pencatatan",
       url: "/dashboard/debt",
       icon: BookOpen,
-      isActive: pathname === "/dashboard/debt",
+      isActive: pathname.startsWith("/dashboard/debt"),
     },
     {
       title: "Pembayaran",
       url: "/dashboard/payment",
       icon: CreditCard,
-      isActive: pathname === "/dashboard/payment",
+      isActive: pathname.startsWith("/dashboard/payment"),
     },
     {
       title: "Status Pembayaran",
       url: "/dashboard/summary",
       icon: RefreshCw,
-      isActive: pathname === "/dashboard/summary",
+      isActive: pathname.startsWith("/dashboard/summary"),
     },
   ];
 
@@ -77,18 +77,18 @@ export function AppSidebar({
     ...(isSuperAdmin
       ? [
           {
-            title: "Manajemen Akun",
-            url: "/dashboard/add-account",
+            title: "Admin Manajemen",
+            url: "/dashboard/admin-management",
             icon: Settings2,
-            isActive: pathname === "/dashboard/add-account",
+            isActive: pathname.startsWith("/dashboard/admin-management"),
           },
         ]
       : []),
     {
       title: "Lainnya",
-      url: "/dashboard",
+      url: "/dashboard/others",
       icon: Ellipsis,
-      isActive: pathname === "/dashboard",
+      isActive: pathname.startsWith("/dashboard/others"),
     },
   ];
 

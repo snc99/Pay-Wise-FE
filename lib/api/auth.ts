@@ -1,32 +1,41 @@
-// lib/api/auth.ts
-import { apiFetch } from "./client";
+import axios from "axios";
+import { api } from "./axios";
 
-export const authAPI = {
-  /**
-   * Login admin
-   */
-  login: async (username: string, password: string) => {
-    return apiFetch("/auth/login", {
-      method: "POST",
-      body: JSON.stringify({ username, password }),
-    });
-  },
+export type UserRole = "ADMIN" | "SUPERADMIN";
 
-  /**
-   * Get profile info (admin)
-   */
-  getProfile: async () => {
-    return apiFetch("/auth/me", {
-      method: "GET",
-    });
-  },
+export type AuthUser = {
+  id: string;
+  name: string;
+  email: string;
+  username: string;
+  role: UserRole;
+};
 
-  /**
-   * Logout
-   */
-  logout: async () => {
-    return apiFetch("/auth/logout", {
-      method: "POST",
-    });
-  },
+export type AuthResponse = {
+  success: AuthUser;
+  user: AuthUser;
+};
+
+export const login = async (
+  username: string,
+  password: string,
+): Promise<AuthResponse> => {
+  const res = await api.post("/auth/login", { username, password });
+  return res.data;
+};
+
+export const getProfile = async (): Promise<AuthResponse | null> => {
+  try {
+    const res = await api.get("/auth/me");
+    return res.data;
+  } catch (err) {
+    if (axios.isAxiosError(err) && err.response?.status === 401) {
+      return null;
+    }
+    throw err;
+  }
+};
+
+export const logout = async (): Promise<void> => {
+  await api.post("/auth/logout");
 };

@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/lib/auth-context";
+import { useAuth } from "@/lib/auth/auth-context";
 
 import { Separator } from "@/components/ui/separator";
 import {
@@ -18,13 +18,21 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, finishLogin, isLoggingIn } = useAuth();
 
+  // 🔐 AUTH GUARDED
   useEffect(() => {
     if (!isLoading && !user) {
       router.replace("/auth/login");
     }
   }, [user, isLoading, router]);
+
+  // 🔄 Sinkronisasi loader login → auth ready
+  useEffect(() => {
+    if (!isLoading && user && isLoggingIn) {
+      finishLogin();
+    }
+  }, [user, isLoading, isLoggingIn, finishLogin]);
 
   if (isLoading) {
     return (

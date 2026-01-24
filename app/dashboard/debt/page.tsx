@@ -1,40 +1,35 @@
-// app/users/page.tsx
 "use client";
 
 import { useEffect, useState } from "react";
-import type { User } from "@/lib/types/user";
-import UserTable from "@/components/users/user-tabel";
-import { getUsers } from "@/lib/api/user";
-import UserCreateDialog from "@/components/users/user-create-dialog";
-import UserUpdateDialog from "@/components/users/user-update-dialog";
-import UserDeleteDialog from "@/components/users/user-delete-dialog";
+import type { Debt } from "@/lib/types/debt";
+import { getDebts } from "@/lib/api/debt";
 import { Card, CardHeader } from "@/components/ui/card";
 import { SearchInput } from "@/components/search-input";
 import { Pagination } from "@/components/pagination";
+import DebtTable from "@/components/debt/debt-tabel";
+import DebtCreateDialog from "@/components/debt/debt-create-dialog";
+import DebtDeleteDialog from "@/components/debt/debt-delete-dialog";
 
-export default function UsersPage() {
+export default function DebtsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [users, setUsers] = useState<User[]>([]);
+  const [debts, setDebts] = useState<Debt[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
-
-  const [editingUser, setEditingUser] = useState<User | null>(null);
-  const [deletingUser, setDeletingUser] = useState<User | null>(null);
+  const [deletingDebt, setDeletingDebt] = useState<Debt | null>(null);
 
   // FETCH
-  const fetchUsers = async (opts?: { search?: string; page?: number }) => {
+  const fetchDebts = async (opts?: { search?: string; page?: number }) => {
     try {
       setLoading(true);
-      const res = await getUsers({
+      const res = await getDebts({
         search: opts?.search ?? searchQuery,
         page: opts?.page ?? currentPage,
         limit: 7,
       });
 
-      setUsers(res?.data?.items ?? []);
-      // setUsers([]);
+      setDebts(res?.data?.items ?? []);
       setCurrentPage(res.pagination?.currentPage ?? 1);
       setTotalPages(res.pagination?.totalPages ?? 1);
     } finally {
@@ -42,26 +37,25 @@ export default function UsersPage() {
     }
   };
 
+  // Initial load
   useEffect(() => {
-    fetchUsers();
+    fetchDebts();
   }, []);
 
+  // Search
   useEffect(() => {
-    const isActiveSearch = searchQuery.trim().length > 0;
-    setIsSearching(isActiveSearch);
+    const active = searchQuery.trim().length > 0;
+    setIsSearching(active);
 
     setLoading(true);
 
     const t = setTimeout(() => {
       setCurrentPage(1);
-      fetchUsers({ search: searchQuery, page: 1 });
+      fetchDebts({ search: searchQuery, page: 1 });
     }, 300);
 
     return () => clearTimeout(t);
   }, [searchQuery]);
-
-  const handleEdit = (user: User) => setEditingUser(user);
-  const handleDelete = (user: User) => setDeletingUser(user);
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
@@ -69,22 +63,24 @@ export default function UsersPage() {
         <CardHeader>
           <div className="space-y-1">
             <h2 className="text-2xl font-bold tracking-tight">
-              Manajemen User
+              Manajemen Utang
             </h2>
             <p className="text-muted-foreground text-sm">
-              Kelola user di sini.
+              Kelola data utang user di sini.
             </p>
 
             <div className="mt-4 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-4">
               <SearchInput
-                placeholder="Cari user..."
+                placeholder="Cari nama user..."
                 onSearch={setSearchQuery}
                 className="w-full sm:w-64"
               />
 
-              <UserCreateDialog onCreated={() => fetchUsers()} />
+              {/* Ganti userId ini sesuai konteks */}
+              <DebtCreateDialog onCreated={() => fetchDebts()} />
             </div>
-            {searchQuery && users.length === 0 && (
+
+            {searchQuery && debts.length === 0 && !loading && (
               <p className="mt-2 text-sm text-gray-500">
                 Menampilkan 0 hasil untuk "{searchQuery}"
               </p>
@@ -97,22 +93,21 @@ export default function UsersPage() {
         ) : (
           <>
             <div className="overflow-x-auto p-2">
-              <UserTable
-                data={users}
+              <DebtTable
+                data={debts}
                 emptyState={isSearching ? "search" : "initial"}
-                onEdit={handleEdit}
-                onDelete={handleDelete}
+                onDelete={(debt) => setDeletingDebt(debt)}
               />
             </div>
 
             <div className="p-4">
-              {users.length > 0 && (
+              {debts.length > 0 && (
                 <Pagination
                   currentPage={currentPage}
                   totalPages={totalPages}
                   onPageChange={(page) => {
                     setCurrentPage(page);
-                    fetchUsers({ search: searchQuery, page });
+                    fetchDebts({ search: searchQuery, page });
                   }}
                 />
               )}
@@ -121,26 +116,13 @@ export default function UsersPage() {
         )}
       </Card>
 
-      {/* EDIT */}
-      {editingUser && (
-        <UserUpdateDialog
-          user={editingUser}
-          onClose={() => setEditingUser(null)}
-          onUpdated={() => {
-            fetchUsers();
-            setEditingUser(null);
-          }}
-        />
-      )}
-
-      {/* DELETE */}
-      {deletingUser && (
-        <UserDeleteDialog
-          user={deletingUser}
-          onClose={() => setDeletingUser(null)}
+      {deletingDebt && (
+        <DebtDeleteDialog
+          debt={deletingDebt}
+          onClose={() => setDeletingDebt(null)}
           onDeleted={() => {
-            fetchUsers();
-            setDeletingUser(null);
+            fetchDebts();
+            setDeletingDebt(null);
           }}
         />
       )}

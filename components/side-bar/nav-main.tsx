@@ -85,10 +85,22 @@ export function NavMain({
             // CASE 2: Item TIDAK punya children -> render direct link (no arrow)
             return (
               <SidebarMenuItem key={item.title}>
-                <SidebarMenuButton asChild tooltip={item.title}>
+                <SidebarMenuButton
+                  asChild
+                  tooltip={item.title}
+                  data-active={item.isActive}
+                >
                   <Link
                     href={item.url ?? "#"}
-                    className="flex items-center gap-2 w-full"
+                    className={`
+      flex items-center gap-2 w-full rounded-md px-2 py-1.5
+      transition-colors
+      ${
+        item.isActive
+          ? "bg-blue-50 text-blue-700 font-semibold border-l-2 border-blue-500"
+          : "text-muted-foreground hover:bg-muted"
+      }
+    `}
                   >
                     {item.icon && <item.icon />}
                     <span>{item.title}</span>
@@ -149,10 +161,22 @@ export function NavMain({
 
               return (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild tooltip={item.title}>
+                  <SidebarMenuButton
+                    asChild
+                    tooltip={item.title}
+                    data-active={item.isActive}
+                  >
                     <Link
                       href={item.url ?? "#"}
-                      className="flex items-center gap-2 w-full"
+                      className={`
+      flex items-center gap-2 w-full rounded-md px-2 py-1.5
+      transition-colors
+      ${
+        item.isActive
+          ? "bg-blue-50 text-blue-700 font-semibold border-l-2 border-blue-500"
+          : "text-muted-foreground hover:bg-muted"
+      }
+    `}
                     >
                       {item.icon && <item.icon />}
                       <span>{item.title}</span>

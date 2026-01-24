@@ -5,14 +5,13 @@ import { useState, useEffect } from "react";
 import { Eye, EyeOff, Loader2, User } from "lucide-react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/lib/auth-context";
+import { useAuth } from "@/lib/auth/auth-context";
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login, user, isLoading: authLoading } = useAuth();
+  const { login, user, isLoading: authLoading, isLoggingIn } = useAuth();
 
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -30,7 +29,7 @@ export default function LoginPage() {
   // Redirect ke dashboard kalau sudah login
   useEffect(() => {
     if (!authLoading && user) {
-      router.push("/dashboard");
+      router.replace("/dashboard");
     }
   }, [user, authLoading, router]);
 
@@ -46,39 +45,41 @@ export default function LoginPage() {
     e.preventDefault();
     setError("");
 
-    const trimmedUsername = username.trim();
-    const trimmedPassword = password.trim();
+    if (isLoggingIn) return;
 
-    if (!trimmedUsername || !trimmedPassword) {
+    const trimmedUsername = username.trim();
+    if (!trimmedUsername || !password) {
       setError("Masukkan username dan password");
       return;
     }
 
-    setIsLoading(true);
-
     try {
-      // ✅ Pakai login dari auth context
-      await login(trimmedUsername, trimmedPassword);
-      // Auto redirect handled by auth context
+      await login(trimmedUsername, password);
     } catch (err: any) {
-      // ✅ Error handling yang lebih simple
-      if (err.message.includes("401") || err.message.includes("salah")) {
+      const response = err?.response?.data;
+
+      if (response?.errors) {
+        const firstError =
+          response.errors.username?.[0] || response.errors.password?.[0];
+
+        if (firstError) {
+          setError(firstError);
+          return;
+        }
+      }
+
+      if (response?.message) {
+        setError(response.message);
+        return;
+      }
+
+      if (err.message?.includes("401") || err.message?.includes("salah")) {
         setError("Username atau password salah");
-      } else if (
-        err.message.includes("400") ||
-        err.message.includes("Validasi")
-      ) {
-        setError("Data tidak valid. Periksa input Anda.");
-      } else if (
-        err.message.includes("network") ||
-        err.message.includes("fetch")
-      ) {
+      } else if (err.message?.includes("network")) {
         setError("Tidak dapat terhubung ke server");
       } else {
-        setError(err?.message || "Terjadi kesalahan. Silakan coba lagi.");
+        setError("Terjadi kesalahan. Silakan coba lagi.");
       }
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -155,7 +156,10 @@ export default function LoginPage() {
             </h2>
             <p className="text-gray-600 mb-8">Welcome Back</p>
 
-            <form className="space-y-6" onSubmit={handleSubmit}>
+            <form
+              className={`space-y-6 ${isLoggingIn ? "pointer-events-none opacity-70" : ""}`}
+              onSubmit={handleSubmit}
+            >
               {/* Username */}
               <div className="space-y-2">
                 <label className="block text-sm font-medium text-gray-700">
@@ -171,7 +175,7 @@ export default function LoginPage() {
                     className="w-full px-4 py-3 pl-10 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition bg-white"
                     placeholder="Masukkan username anda"
                     required
-                    disabled={isLoading}
+                    disabled={isLoggingIn}
                     whileFocus={{
                       borderColor: "#3b82f6",
                       boxShadow: "0 0 0 3px rgba(59,130,246,0.1)",
@@ -196,7 +200,7 @@ export default function LoginPage() {
                     className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition bg-white pr-10"
                     placeholder="Masukkan password anda"
                     required
-                    disabled={isLoading}
+                    disabled={isLoggingIn}
                     whileFocus={{
                       borderColor: "#3b82f6",
                       boxShadow: "0 0 0 3px rgba(59,130,246,0.1)",
@@ -211,7 +215,7 @@ export default function LoginPage() {
                         ? "Sembunyikan password"
                         : "Tampilkan password"
                     }
-                    disabled={isLoading}
+                    disabled={isLoggingIn}
                   >
                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
@@ -233,11 +237,11 @@ export default function LoginPage() {
               <motion.button
                 type="submit"
                 className="w-full bg-linear-to-r from-blue-500 to-blue-600 text-white py-3 px-4 rounded-xl font-medium hover:from-blue-600 hover:to-blue-700 transition duration-300 relative overflow-hidden disabled:opacity-60 disabled:cursor-not-allowed"
-                whileHover={{ scale: isLoading ? 1 : 1.02 }}
-                whileTap={{ scale: isLoading ? 1 : 0.98 }}
-                disabled={isLoading || !username.trim() || !password}
+                whileHover={{ scale: isLoggingIn ? 1 : 1.02 }}
+                whileTap={{ scale: isLoggingIn ? 1 : 0.98 }}
+                disabled={isLoggingIn || !username.trim() || !password}
               >
-                {isLoading ? (
+                {isLoggingIn ? (
                   <>
                     <span className="absolute inset-0 flex items-center justify-center">
                       <Loader2 className="animate-spin h-5 w-5" />

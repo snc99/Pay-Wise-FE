@@ -1,38 +1,41 @@
 // lib/api/client.ts
+import axios from "axios";
+
 const API_BASE_URL = (
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"
 ).replace(/\/$/, "");
 
-interface ApiFetchOptions extends RequestInit {
-  auth?: boolean;
-}
+export const api = axios.create({
+  baseURL: `${API_BASE_URL}/api`,
+  withCredentials: true,
+  headers: {
+    "Content-Type": "application/json",
+  },
+});
 
-async function safeJson(res: Response) {
-  const t = await res.text();
-  return t ? JSON.parse(t) : null;
+function normalizeError(err: any) {
+  if (err.response?.data) return err.response.data;
+  return {
+    success: false,
+    message: err.message ?? "Terjadi kesalahan",
+  };
 }
 
 export async function apiFetch(
   endpoint: string,
-  options: ApiFetchOptions = {}
+  options?: {
+    method?: "GET" | "POST" | "PUT" | "DELETE";
+    body?: any;
+  },
 ) {
-  const { auth = true, headers = {}, ...rest } = options;
-  const path = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
-  const url = `${API_BASE_URL}/api${path}`;
-
-  const fetchOptions: RequestInit = {
-    ...rest,
-    headers: { "Content-Type": "application/json", ...headers },
-    credentials: "include",
-  };
-
-  const res = await fetch(url, fetchOptions);
-  const data = await safeJson(res);
-  if (!res.ok) {
-    const err: any = new Error(data?.message || `HTTP ${res.status}`);
-    err.status = res.status;
-    err.response = data;
-    throw err;
+  try {
+    const res = await api({
+      url: endpoint,
+      method: options?.method ?? "GET",
+      data: options?.body,
+    });
+    return res.data;
+  } catch (err: any) {
+    throw normalizeError(err);
   }
-  return data;
 }

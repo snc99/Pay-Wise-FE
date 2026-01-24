@@ -2,6 +2,8 @@
 export type Role = "SUPERADMIN" | "ADMIN";
 
 export type Admin = {
+  user: any;
+  success: any;
   id: string;
   username: string;
   email: string;
