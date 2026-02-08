@@ -1,24 +1,22 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { Debt } from "@/lib/types/debt";
 import { getDebts } from "@/lib/api/debt";
 import { Card, CardHeader } from "@/components/ui/card";
-import { SearchInput } from "@/components/search-input";
-import { Pagination } from "@/components/pagination";
+import { SearchInput } from "@/components/shared/search-input";
+import { Pagination } from "@/components/shared/pagination";
 import DebtTable from "@/components/debt/debt-tabel";
 import DebtCreateDialog from "@/components/debt/debt-create-dialog";
-import DebtDeleteDialog from "@/components/debt/debt-delete-dialog";
+import { DebtCycle } from "@/lib/types/debt-cycle";
+import { TableSkeleton } from "@/components/shared/table-skeleton";
 
 export default function DebtsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [debts, setDebts] = useState<Debt[]>([]);
+  const [debts, setDebts] = useState<DebtCycle[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
-  const [deletingDebt, setDeletingDebt] = useState<Debt | null>(null);
-
   // FETCH
   const fetchDebts = async (opts?: { search?: string; page?: number }) => {
     try {
@@ -29,7 +27,7 @@ export default function DebtsPage() {
         limit: 7,
       });
 
-      setDebts(res?.data?.items ?? []);
+      setDebts(res?.items ?? []);
       setCurrentPage(res.pagination?.currentPage ?? 1);
       setTotalPages(res.pagination?.totalPages ?? 1);
     } finally {
@@ -89,14 +87,15 @@ export default function DebtsPage() {
         </CardHeader>
 
         {loading ? (
-          <div className="p-8 text-center">Memuat data...</div>
+          <div className="overflow-x-auto p-6">
+            <TableSkeleton />
+          </div>
         ) : (
           <>
             <div className="overflow-x-auto p-2">
               <DebtTable
                 data={debts}
                 emptyState={isSearching ? "search" : "initial"}
-                onDelete={(debt) => setDeletingDebt(debt)}
               />
             </div>
 
@@ -115,17 +114,6 @@ export default function DebtsPage() {
           </>
         )}
       </Card>
-
-      {deletingDebt && (
-        <DebtDeleteDialog
-          debt={deletingDebt}
-          onClose={() => setDeletingDebt(null)}
-          onDeleted={() => {
-            fetchDebts();
-            setDeletingDebt(null);
-          }}
-        />
-      )}
     </div>
   );
 }

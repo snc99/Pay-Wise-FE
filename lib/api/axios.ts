@@ -16,18 +16,6 @@ export const api = axios.create({
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    const status = error?.response?.status;
-
-    if (status === 401) {
-      // ⛔ PENTING: jangan redirect kalau sudah di halaman login
-      if (
-        typeof window !== "undefined" &&
-        window.location.pathname !== "/auth/login"
-      ) {
-        window.location.href = "/auth/login";
-      }
-    }
-
     return Promise.reject(error);
   },
 );

@@ -1,9 +1,6 @@
-// lib/types/admin.ts
 export type Role = "SUPERADMIN" | "ADMIN";
 
 export type Admin = {
-  user: any;
-  success: any;
   id: string;
   username: string;
   email: string;
@@ -12,3 +9,13 @@ export type Admin = {
   createdAt: string;
   updatedAt: string;
 };
+
+export type CreateAdminPayload = {
+  name: string;
+  username: string;
+  email: string;
+  password: string;
+  role: Role;
+};
+
+export type UpdateAdminPayload = Partial<CreateAdminPayload>;

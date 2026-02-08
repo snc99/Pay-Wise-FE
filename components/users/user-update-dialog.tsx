@@ -1,53 +1,87 @@
 "use client";
 
-import { useState } from "react";
-import { toast } from "sonner";
-import type { User } from "@/lib/types/user";
-import { updateUser } from "@/lib/api/user";
+import { useCallback, useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Label } from "@radix-ui/react-label";
+import { FiEdit2, FiUser, FiPhone, FiMapPin } from "react-icons/fi";
+import { toast } from "sonner";
+import type { User } from "@/lib/types/user";
+import { updateUser } from "@/lib/api/user";
 import { cn } from "@/lib/utils";
-import { Loader2 } from "lucide-react";
+import { Download, Loader2 } from "lucide-react";
 
 type Props = {
   user: User;
-  onClose: () => void;
-  onUpdated: () => void;
+  onUpdated?: (user: User) => void;
+  children: React.ReactNode;
 };
 
-export default function UserUpdateDialog({ user, onClose, onUpdated }: Props) {
+export default function UserUpdateDialog({ user, onUpdated, children }: Props) {
+  const [open, setOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [form, setForm] = useState({
-    name: user.name ?? "",
-    phone: user.phone ?? "",
-    address: user.address ?? "",
+    name: "",
+    phone: "",
+    address: "",
   });
 
-  const [formErrors, setFormErrors] = useState<{ [key: string]: string }>({});
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+
+  // Initialize form with user data when modal opens or user changes
+  useEffect(() => {
+    if (open && user) {
+      setForm({
+        name: user.name || "",
+        phone: user.phone || "",
+        address: user.address || "",
+      });
+      setFormErrors({});
+    }
+  }, [open, user]);
+
+  const resetForm = useCallback(() => {
+    if (user) {
+      setForm({
+        name: user.name || "",
+        phone: user.phone || "",
+        address: user.address || "",
+      });
+    }
+    setFormErrors({});
+  }, [user]);
 
   const handleInputChange =
     (field: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) => {
       setForm((prev) => ({ ...prev, [field]: e.target.value }));
-      setFormErrors((prev) => {
-        const next = { ...prev };
-        delete next[field];
-        return next;
-      });
+      if (formErrors[field]) {
+        setFormErrors((prev) => {
+          const next = { ...prev };
+          delete next[field];
+          return next;
+        });
+      }
     };
 
   const validate = () => {
     const errors: Record<string, string> = {};
-    if (!form.name.trim()) errors.name = "Nama wajib diisi";
-    if (!form.phone.trim()) errors.phone = "Nomor telepon wajib diisi";
-    if (form.phone && !/^[0-9+\-\s()]{3,}$/.test(form.phone)) {
+
+    if (!form.name.trim()) {
+      errors.name = "Nama wajib diisi";
+    } else if (form.name.length < 2) {
+      errors.name = "Nama minimal 2 karakter";
+    }
+
+    if (!form.phone.trim()) {
+      errors.phone = "Nomor telepon wajib diisi";
+    } else if (!/^[0-9+\-\s()]{3,}$/.test(form.phone)) {
       errors.phone = "Format nomor telepon tidak valid";
     }
 
@@ -69,122 +103,210 @@ export default function UserUpdateDialog({ user, onClose, onUpdated }: Props) {
         address: form.address,
       };
 
-      await updateUser(user.id, payload);
+      const res = await updateUser(user.id, payload);
+      const updated = res?.data ?? res;
 
-      toast.success(`${form.name} berhasil diperbarui`);
-      onUpdated();
-      setFormErrors({});
+      toast.success(`${updated?.name || "User"} berhasil diperbarui`);
+
+      onUpdated?.(updated);
+      setOpen(false);
     } catch (err: any) {
       const apiErrors = err?.response?.data?.errors;
 
       if (apiErrors && typeof apiErrors === "object") {
         const fieldErrors: Record<string, string> = {};
-        Object.entries(apiErrors || {}).forEach(
-          ([field, messages]: [string, any]) => {
-            if (Array.isArray(messages) && messages.length > 0) {
-              fieldErrors[field] = messages[0];
-            }
-          },
-        );
+        Object.entries(apiErrors).forEach(([field, messages]: any) => {
+          if (Array.isArray(messages) && messages.length > 0) {
+            fieldErrors[field.toLowerCase()] = messages[0];
+          }
+        });
         setFormErrors(fieldErrors);
         return;
       }
+
+      toast.error(err?.response?.data?.message || "Gagal memperbarui user");
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <Dialog open onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="sm:max-w-[500px] rounded-lg">
-        <DialogHeader className="space-y-1 border-b pb-4">
-          <DialogTitle className="text-xl font-semibold text-gray-800">
-            Ubah User
-          </DialogTitle>
-          <p className="text-sm text-muted-foreground">
-            Ubah informasi user sesuai kebutuhan Anda.
-          </p>
-        </DialogHeader>
+    <Dialog
+      open={open}
+      onOpenChange={(v) => {
+        setOpen(v);
+        if (!v) resetForm();
+      }}
+    >
+      <DialogTrigger asChild>{children}</DialogTrigger>
 
-        <div className="grid gap-5 py-4">
-          <div className="space-y-2">
-            <Label>Nama Lengkap</Label>
-            <Input
-              value={form.name}
-              onChange={handleInputChange("name")}
-              className={cn(
-                "focus-visible:ring-2 focus-visible:ring-offset-2",
-                formErrors.name
-                  ? "border-red-500 focus-visible:ring-red-500"
-                  : "focus-visible:ring-blue-500",
+      <DialogContent className="sm:max-w-[520px] max-w-[95vw] rounded-xl p-0 overflow-hidden border shadow-lg">
+        {/* Header dengan subtle gradient - Warna biru untuk consistency */}
+        <div className="bg-gradient-to-r from-blue-50 to-gray-50 px-6 pt-6 pb-4 border-b">
+          <DialogHeader>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <FiEdit2 className="h-5 w-5 text-blue-600" />
+              </div>
+              <div>
+                <DialogTitle className="text-lg font-semibold text-gray-800">
+                  Edit User
+                </DialogTitle>
+                <p className="text-sm text-gray-600 mt-1">
+                  Perbarui informasi user {user.name}
+                </p>
+              </div>
+            </div>
+          </DialogHeader>
+        </div>
+
+        <form
+          autoComplete="off"
+          className="px-6 py-5 space-y-4"
+          onSubmit={(e) => {
+            e.preventDefault();
+            submitUpdate();
+          }}
+        >
+          <div className="grid grid-cols-1 gap-5">
+            {/* NAMA LENGKAP */}
+            <div className="space-y-2">
+              <Label
+                htmlFor="name"
+                className="text-sm font-medium text-gray-700"
+              >
+                Nama Lengkap <span className="text-red-500">*</span>
+              </Label>
+              <div className="relative">
+                <input
+                  id="name"
+                  type="text"
+                  value={form.name}
+                  onChange={handleInputChange("name")}
+                  className={cn(
+                    "w-full h-10 pl-10 pr-3 rounded-lg border text-sm",
+                    "bg-white focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100",
+                    formErrors.name
+                      ? "border-red-500 focus:border-red-500 focus:ring-red-100"
+                      : "border-gray-300",
+                    "transition-all duration-200",
+                  )}
+                  placeholder="Masukkan nama lengkap"
+                  disabled={isSubmitting}
+                />
+                <FiUser className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              </div>
+              {formErrors.name && (
+                <p className="text-sm text-red-600">{formErrors.name}</p>
               )}
-              disabled={isSubmitting}
-            />
-            {formErrors.name && (
-              <p className="text-sm text-red-500">{formErrors.name}</p>
-            )}
+            </div>
+
+            {/* NOMOR TELEPON */}
+            <div className="space-y-2">
+              <Label
+                htmlFor="phone"
+                className="text-sm font-medium text-gray-700"
+              >
+                Nomor Telepon <span className="text-red-500">*</span>
+              </Label>
+              <div className="relative">
+                <input
+                  id="phone"
+                  type="tel"
+                  value={form.phone}
+                  onChange={handleInputChange("phone")}
+                  className={cn(
+                    "w-full h-10 pl-10 pr-3 rounded-lg border text-sm",
+                    "bg-white focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100",
+                    formErrors.phone
+                      ? "border-red-500 focus:border-red-500 focus:ring-red-100"
+                      : "border-gray-300",
+                    "transition-all duration-200",
+                  )}
+                  placeholder="081234567890"
+                  disabled={isSubmitting}
+                />
+                <FiPhone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              </div>
+              {formErrors.phone && (
+                <p className="text-sm text-red-600">{formErrors.phone}</p>
+              )}
+            </div>
+
+            {/* ALAMAT */}
+            <div className="space-y-2">
+              <Label
+                htmlFor="address"
+                className="text-sm font-medium text-gray-700"
+              >
+                Alamat
+              </Label>
+              <div className="relative">
+                <input
+                  id="address"
+                  type="text"
+                  value={form.address}
+                  onChange={handleInputChange("address")}
+                  className={cn(
+                    "w-full h-10 pl-10 pr-3 rounded-lg border text-sm",
+                    "bg-white focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100",
+                    formErrors.address
+                      ? "border-red-500 focus:border-red-500 focus:ring-red-100"
+                      : "border-gray-300",
+                    "transition-all duration-200",
+                  )}
+                  placeholder="Jl. Merdeka No. 123, Jakarta"
+                  disabled={isSubmitting}
+                />
+                <FiMapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              </div>
+              {formErrors.address && (
+                <p className="text-sm text-red-600">{formErrors.address}</p>
+              )}
+              <p className="text-xs text-gray-500">Alamat bersifat opsional</p>
+            </div>
           </div>
 
-          <div className="space-y-2">
-            <Label>Nomor Telepon</Label>
-            <Input
-              value={form.phone}
-              onChange={handleInputChange("phone")}
+          {/* ACTION BUTTONS */}
+          <div className="flex justify-end gap-3 pt-5 border-t">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setOpen(false)}
               className={cn(
-                "focus-visible:ring-2 focus-visible:ring-offset-2",
-                formErrors.phone
-                  ? "border-red-500 focus-visible:ring-red-500"
-                  : "focus-visible:ring-blue-500",
+                "h-10 px-4 rounded-lg font-medium transition-all duration-200",
+                "border-gray-300 hover:bg-gray-50 hover:border-gray-400",
+                "focus:outline-none focus:ring-4 focus:ring-gray-100",
               )}
               disabled={isSubmitting}
-            />
-            {formErrors.phone && (
-              <p className="text-sm text-red-500">{formErrors.phone}</p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label>Alamat</Label>
-            <Input
-              value={form.address}
-              onChange={handleInputChange("address")}
-              className={cn(
-                "focus-visible:ring-2 focus-visible:ring-offset-2",
-                formErrors.address
-                  ? "border-red-500 focus-visible:ring-red-500"
-                  : "focus-visible:ring-blue-500",
-              )}
-              disabled={isSubmitting}
-            />
-            {formErrors.address && (
-              <p className="text-sm text-red-500">{formErrors.address}</p>
-            )}
-          </div>
-
-          <div className="flex justify-end gap-3 pt-2">
-            <Button variant="outline" onClick={onClose} disabled={isSubmitting}>
+            >
               Batal
             </Button>
+
             <Button
-              onClick={submitUpdate}
+              type="submit"
               disabled={isSubmitting}
-              className={`
-                bg-linear-to-r from-blue-500 to-cyan-600
-               hover:from-blue-600 hover:to-cyan-700
-                shadow-md hover:shadow-lg
-                transition-all duration-200
-                min-w-[120px]
-                ${isSubmitting ? "opacity-80 cursor-not-allowed" : ""}
-                        `}
+              className={cn(
+                "h-10 px-4 rounded-lg font-medium transition-all duration-200",
+                "bg-blue-600 hover:bg-blue-700 text-white",
+                "focus:outline-none focus:ring-4 focus:ring-blue-100",
+                "disabled:opacity-50 disabled:cursor-not-allowed",
+              )}
             >
               {isSubmitting ? (
-                <Loader2 className="h-5 w-5 animate-spin text-white" />
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Menyimpan...
+                </>
               ) : (
-                "Simpan"
+                <>
+                  <Download className="mr-2 h-4 w-4" />
+                  Perbarui
+                </>
               )}
             </Button>
           </div>
-        </div>
+        </form>
       </DialogContent>
     </Dialog>
   );

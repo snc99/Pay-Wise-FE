@@ -3,23 +3,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 export function DashboardSkeleton() {
   return (
     <div className="flex h-screen bg-gray-50">
-      {/* Sidebar Skeleton */}
-      <div className="w-64 border-r bg-white p-4">
-        <div className="mb-8 flex items-center space-x-2">
-          <Skeleton className="h-8 w-32" />
-        </div>
-
-        <nav className="space-y-2">
-          {/* 7 Menu Items Skeleton */}
-          {[...Array(7)].map((_, i) => (
-            <div key={i} className="flex items-center space-x-2 rounded-md p-2">
-              <Skeleton className="h-5 w-5 rounded-full" />
-              <Skeleton className="h-4 w-24" />
-            </div>
-          ))}
-        </nav>
-      </div>
-
       {/* Main Content Skeleton */}
       <div className="flex-1 overflow-auto p-8">
         <header className="mb-8 space-y-2">

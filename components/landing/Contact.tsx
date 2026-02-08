@@ -1,101 +1,146 @@
 "use client";
 
-import IconCard4 from "@/public/card/iconCard4";
-import IconCard5 from "@/public/card/iconCard5";
-import IconCard6 from "@/public/card/iconCard6";
-import { motion, useScroll, useTransform } from "framer-motion";
+import { motion } from "framer-motion";
+import { FiMapPin, FiPhone, FiMail, FiSend } from "react-icons/fi";
+import { useState } from "react";
 
 export default function Contact() {
-  const { scrollYProgress } = useScroll();
-  const parallax = useTransform(scrollYProgress, [0, 1], [0, -60]);
-  const floatAnim = { y: [0, -6, 0] };
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    message: "",
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    console.log(formData);
+  };
+
+  const contactInfo = [
+    {
+      icon: <FiPhone className="text-3xl" />,
+      title: "WhatsApp / Telepon",
+      details: "0876 4523 445",
+      color: "from-green-500 to-emerald-500",
+    },
+    {
+      icon: <FiMail className="text-3xl" />,
+      title: "Email",
+      details: "support@paywise.co.id",
+      color: "from-blue-500 to-cyan-500",
+    },
+    {
+      icon: <FiMapPin className="text-3xl" />,
+      title: "Lokasi",
+      details: "Jakarta Selatan",
+      color: "from-purple-500 to-pink-500",
+    },
+  ];
 
   return (
-    <main>
-      <section
-        id="contact"
-        className="container mx-auto min-h-screen px-4 md:px-8 lg:px-16 scroll-mt-24"
-      >
-        {/* Heading */}
+    <section id="contact" className="relative py-20 overflow-hidden">
+      <div className="absolute top-20 left-10 w-64 h-64 bg-blue-100 rounded-full blur-3xl opacity-20"></div>
+      <div className="absolute bottom-20 right-10 w-80 h-80 bg-purple-100 rounded-full blur-3xl opacity-10"></div>
+
+      <div className="container mx-auto px-4">
+        {/* Header */}
         <motion.div
-          initial={{ opacity: 0, y: -20 }}
+          initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.5 }}
-          className="flex flex-col items-center pt-16 md:pt-20"
+          className="text-center mb-14"
         >
-          <h1 className="text-3xl md:text-4xl font-bold text-center">
-            Kontak Kami
+          <h1 className="text-4xl lg:text-5xl font-bold bg-linear-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+            Hubungi Kami
           </h1>
-
-          <span className="h-0.5 w-16 bg-black mt-3"></span>
-
-          <p className="text-center text-gray-600 max-w-2xl mt-6 mb-14 text-sm md:text-base">
-            Jika Anda memiliki pertanyaan atau membutuhkan bantuan lebih lanjut,
-            jangan ragu untuk menghubungi kami melalui informasi di bawah ini.
+          <p className="mt-5 text-gray-600 max-w-xl mx-auto text-lg">
+            Punya pertanyaan atau ingin mulai menggunakan sistem kami? Silakan
+            hubungi kami, kami siap membantu.
           </p>
         </motion.div>
 
-        {/* Cards */}
-        <motion.div
-          style={{ y: parallax }}
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10 place-items-center"
-        >
-          {[
-            {
-              icon: <IconCard4 />,
-              title: "Alamat",
-              desc: "Jl. Sagong RT 02 RW 06",
-              delay: 0,
-            },
-            {
-              icon: <IconCard5 />,
-              title: "Telepon",
-              desc: "08764523445",
-              delay: 0.3,
-            },
-            {
-              icon: <IconCard6 />,
-              title: "Email",
-              desc: "Paywise@gmail.co.id",
-              delay: 0.6,
-            },
-          ].map((card, index) => (
-            <motion.div
-              key={index}
-              initial={{ opacity: 0, y: 40 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: card.delay }}
-              whileHover={{
-                scale: 1.05,
-                boxShadow: "0 8px 25px rgba(0,0,0,0.15)",
-              }}
-              className="w-[280px] sm:w-[300px] h-44 rounded-xl border border-gray-200 bg-[#e0f2fe] shadow-sm p-5
-              transition-all cursor-default hover:bg-[#dbeeff]"
-            >
+        <div className="grid lg:grid-cols-2 gap-12 max-w-5xl mx-auto">
+          {/* Info */}
+          <div className="grid sm:grid-cols-2 gap-6">
+            {contactInfo.map((item, index) => (
               <motion.div
-                animate={floatAnim}
-                transition={{
-                  duration: 4 + index,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                }}
-                className="flex items-start gap-4"
+                key={index}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.1 }}
               >
-                <div className="w-12 h-12 rounded-full bg-white/80 shadow flex items-center justify-center">
-                  {card.icon}
-                </div>
-
-                <div>
-                  <h3 className="text-lg font-semibold">{card.title}</h3>
-                  <p className="mt-1 text-gray-700 text-sm">{card.desc}</p>
+                <div className="bg-white p-6 rounded-2xl shadow-md border border-gray-100">
+                  <div
+                    className={`inline-flex p-3 rounded-xl bg-linear-to-r ${item.color} mb-4`}
+                  >
+                    <div className="text-white">{item.icon}</div>
+                  </div>
+                  <h3 className="text-lg font-semibold">{item.title}</h3>
+                  <p className="text-gray-700 mt-1">{item.details}</p>
                 </div>
               </motion.div>
-            </motion.div>
-          ))}
-        </motion.div>
-      </section>
-    </main>
+            ))}
+          </div>
+
+          {/* Form */}
+          <motion.div
+            initial={{ opacity: 0, x: 30 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            className="bg-white p-8 rounded-3xl shadow-lg border border-gray-100"
+          >
+            <h2 className="text-2xl font-bold mb-2">Kirim Pesan</h2>
+            <p className="text-gray-600 mb-6">
+              Tinggalkan pesan Anda, kami akan menghubungi secepatnya.
+            </p>
+
+            <form onSubmit={handleSubmit} className="space-y-5">
+              <input
+                type="text"
+                required
+                placeholder="Nama"
+                className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:border-blue-500 outline-none"
+                value={formData.name}
+                onChange={(e) =>
+                  setFormData({ ...formData, name: e.target.value })
+                }
+              />
+
+              <input
+                type="email"
+                required
+                placeholder="Email"
+                className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:border-blue-500 outline-none"
+                value={formData.email}
+                onChange={(e) =>
+                  setFormData({ ...formData, email: e.target.value })
+                }
+              />
+
+              <textarea
+                required
+                rows={4}
+                placeholder="Pesan"
+                className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:border-blue-500 outline-none resize-none"
+                value={formData.message}
+                onChange={(e) =>
+                  setFormData({ ...formData, message: e.target.value })
+                }
+              />
+
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="w-full py-3 bg-linear-to-r from-blue-500 to-purple-500 text-white font-semibold rounded-xl flex items-center justify-center gap-2"
+              >
+                <FiSend />
+                Kirim Pesan
+              </motion.button>
+            </form>
+          </motion.div>
+        </div>
+      </div>
+    </section>
   );
 }

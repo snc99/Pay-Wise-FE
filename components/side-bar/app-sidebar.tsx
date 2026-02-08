@@ -65,12 +65,12 @@ export function AppSidebar({
       icon: CreditCard,
       isActive: pathname.startsWith("/dashboard/payment"),
     },
-    {
-      title: "Status Pembayaran",
-      url: "/dashboard/summary",
-      icon: RefreshCw,
-      isActive: pathname.startsWith("/dashboard/summary"),
-    },
+    // {
+    //   title: "Status Pembayaran",
+    //   url: "/dashboard/summary",
+    //   icon: RefreshCw,
+    //   isActive: pathname.startsWith("/dashboard/summary"),
+    // },
   ];
 
   const settingItems = [
@@ -84,12 +84,12 @@ export function AppSidebar({
           },
         ]
       : []),
-    {
-      title: "Lainnya",
-      url: "/dashboard/others",
-      icon: Ellipsis,
-      isActive: pathname.startsWith("/dashboard/others"),
-    },
+    // {
+    //   title: "Lainnya",
+    //   url: "/dashboard/others",
+    //   icon: Ellipsis,
+    //   isActive: pathname.startsWith("/dashboard/others"),
+    // },
   ];
 
   return (

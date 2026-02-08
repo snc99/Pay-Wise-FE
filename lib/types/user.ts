@@ -1,5 +1,3 @@
-import { Debt } from "./debt";
-
 // lib/types/user.ts
 export type User = {
   id: string;
@@ -8,11 +6,4 @@ export type User = {
   address?: string | null;
   createdAt: string;
   updatedAt: string;
-};
-
-/**
- * Optional: response wrapper when user includes debts
- */
-export type UserWithDebts = User & {
-  debts?: Debt[];
 };

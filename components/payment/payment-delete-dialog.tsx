@@ -3,8 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import { toast } from "sonner";
-import type { Admin } from "@/lib/types/admin";
-import { deleteAdmin } from "@/lib/api/admin";
+
 import {
   Dialog,
   DialogContent,
@@ -15,15 +14,25 @@ import { Button } from "@/components/ui/button";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { DebtCycle } from "@/lib/types/debt-cycle";
+import { deletePaymentCycle } from "@/lib/api";
+
+type DeleteTarget = {
+  id: string;
+  user: {
+    id: string;
+    name: string;
+  };
+};
 
 type Props = {
-  admin: Admin;
+  payment: DeleteTarget;
   onDeleted?: () => void;
   children: React.ReactNode;
 };
 
-export default function AdminDeleteDialog({
-  admin,
+export default function PaymentDeleteDialog({
+  payment,
   onDeleted,
   children,
 }: Props) {
@@ -33,12 +42,12 @@ export default function AdminDeleteDialog({
   const submitDelete = async () => {
     setIsDeleting(true);
     try {
-      await deleteAdmin(admin.id);
-      toast.success(`${admin.name} berhasil dihapus`);
+      await deletePaymentCycle(payment.id);
+      toast.success(`Tagihan ${payment.user.name} berhasil dihapus`);
       onDeleted?.();
       setOpen(false);
     } catch (err: any) {
-      const message = err?.response?.data?.message || "Gagal menghapus admin";
+      const message = err?.response?.data?.message || "Gagal menghapus tagihan";
       toast.error(message);
     } finally {
       setIsDeleting(false);
@@ -52,7 +61,7 @@ export default function AdminDeleteDialog({
       <DialogContent className="sm:max-w-[420px] rounded-2xl px-8 py-10 text-center">
         {/* ACCESSIBILITY */}
         <VisuallyHidden>
-          <DialogTitle>Konfirmasi Hapus Admin</DialogTitle>
+          <DialogTitle>Konfirmasi Hapus Tagihan</DialogTitle>
         </VisuallyHidden>
 
         {/* IMAGE */}
@@ -68,12 +77,13 @@ export default function AdminDeleteDialog({
 
         {/* TITLE */}
         <h1 className="text-xl font-bold text-gray-900">
-          Yakin ingin menghapus admin ini?
+          Yakin ingin menghapus tagihan ini?
         </h1>
 
         {/* DESC */}
         <p className="mt-1 text-sm text-gray-500">
-          Admin <span className="font-medium text-gray-900">{admin.name}</span>{" "}
+          Tagihan milik{" "}
+          <span className="font-medium text-gray-900">{payment.user.name}</span>{" "}
           akan dihapus secara permanen.
         </p>
 

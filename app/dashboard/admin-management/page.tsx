@@ -4,14 +4,13 @@ import { useEffect, useState } from "react";
 import type { Admin } from "@/lib/types/admin";
 import { getAdmins } from "@/lib/api/admin";
 import { Card, CardHeader } from "@/components/ui/card";
-import { SearchInput } from "@/components/search-input";
-import { Pagination } from "@/components/pagination";
+import { SearchInput } from "@/components/shared/search-input";
+import { Pagination } from "@/components/shared/pagination";
 import AdminTable from "@/components/admin/admin-tabel";
 import AdminCreateDialog from "@/components/admin/admin-create-dialog";
-import AdminUpdateDialog from "@/components/admin/admin-update-dialog";
-import AdminDeleteDialog from "@/components/admin/admin-delete-dialog";
 import { useAuth } from "@/lib/auth/auth-context";
 import { useRouter } from "next/navigation";
+import { TableSkeleton } from "@/components/shared/table-skeleton";
 
 export default function AdminManagementPage() {
   const { user, isLoading } = useAuth();
@@ -23,8 +22,6 @@ export default function AdminManagementPage() {
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
-  const [editingAdmin, setEditingAdmin] = useState<Admin | null>(null);
-  const [deletingAdmin, setDeletingAdmin] = useState<Admin | null>(null);
 
   // 🔐 ROLE GUARD
   useEffect(() => {
@@ -90,9 +87,6 @@ export default function AdminManagementPage() {
     return null; // atau loading skeleton
   }
 
-  const handleEdit = (admin: Admin) => setEditingAdmin(admin);
-  const handleDelete = (admin: Admin) => setDeletingAdmin(admin);
-
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
       <Card className="border border-muted shadow-md rounded-2xl">
@@ -123,15 +117,16 @@ export default function AdminManagementPage() {
         </CardHeader>
 
         {loading ? (
-          <div className="p-8 text-center">Memuat data...</div>
+          <div className="overflow-x-auto p-6">
+            <TableSkeleton />
+          </div>
         ) : (
           <>
             <div className="overflow-x-auto p-2">
               <AdminTable
                 data={admins}
                 emptyState={isSearching ? "search" : "initial"}
-                onEdit={handleEdit}
-                onDelete={handleDelete}
+                onRefresh={fetchAdmins}
               />
             </div>
 
@@ -150,28 +145,6 @@ export default function AdminManagementPage() {
           </>
         )}
       </Card>
-
-      {editingAdmin && (
-        <AdminUpdateDialog
-          admin={editingAdmin}
-          onClose={() => setEditingAdmin(null)}
-          onUpdated={() => {
-            fetchAdmins();
-            setEditingAdmin(null);
-          }}
-        />
-      )}
-
-      {deletingAdmin && (
-        <AdminDeleteDialog
-          admin={deletingAdmin}
-          onClose={() => setDeletingAdmin(null)}
-          onDeleted={() => {
-            fetchAdmins();
-            setDeletingAdmin(null);
-          }}
-        />
-      )}
     </div>
   );
 }

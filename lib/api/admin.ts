@@ -1,5 +1,5 @@
 import { api } from "./axios";
-
+import type { CreateAdminPayload, UpdateAdminPayload } from "@/lib/types/admin";
 type GetAdminsParams = {
   search?: string;
   page?: number;
@@ -18,26 +18,12 @@ export async function getAdmins(params: GetAdminsParams = {}) {
   return res.data;
 }
 
-export async function createAdmin(payload: {
-  name: string;
-  username: string;
-  email: string;
-  password: string;
-  role: "ADMIN" | "SUPERADMIN";
-}) {
+export async function createAdmin(payload: CreateAdminPayload) {
   const res = await api.post("/admin", payload);
   return res.data;
 }
 
-export async function updateAdmin(
-  id: string,
-  payload: Partial<{
-    name: string;
-    email: string;
-    password: string;
-    role: "ADMIN" | "SUPERADMIN";
-  }>,
-) {
+export async function updateAdmin(id: string, payload: UpdateAdminPayload) {
   const res = await api.put(`/admin/${id}`, payload);
   return res.data;
 }

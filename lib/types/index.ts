@@ -1,8 +1,7 @@
 // lib/types/index.ts
 export * from "./admin";
 export * from "./user";
-export * from "./debt";
-export * from "./payment";
+export * from "./debt-item";
 
 /**
  * Common helper types

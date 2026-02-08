@@ -12,8 +12,8 @@ export default function Page() {
       <Header />
       <Home />
       <About />
-      <Dept />
       <Services />
+      <Dept />
       <Contact />
       <Footer />
     </main>

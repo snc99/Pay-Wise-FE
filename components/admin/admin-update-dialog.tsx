@@ -1,64 +1,109 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@radix-ui/react-label";
+import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import {
+  FiEdit2,
+  FiEye,
+  FiEyeOff,
+  FiUser,
+  FiMail,
+  FiShield,
+  FiKey,
+} from "react-icons/fi";
 import { toast } from "sonner";
-import { updateAdmin } from "@/lib/api/admin";
+import { updateAdmin } from "@/lib/api/admin"; // Pastikan ada fungsi updateAdmin
 import type { Admin, Role } from "@/lib/types/admin";
 import { cn } from "@/lib/utils";
-import { Loader2 } from "lucide-react";
+import { Download, Loader2 } from "lucide-react";
 
 type Props = {
   admin: Admin;
-  onClose: () => void;
-  onUpdated: () => void;
+  onUpdated?: (admin: Admin) => void;
+  children: React.ReactNode;
 };
 
 export default function AdminUpdateDialog({
   admin,
-  onClose,
   onUpdated,
+  children,
 }: Props) {
+  const [open, setOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const [form, setForm] = useState({
-    name: admin.name,
-    username: admin.username,
-    email: admin.email,
-    password: "",
-    role: admin.role as Role,
+    name: "",
+    username: "",
+    email: "",
+    password: "", // Password kosong untuk edit (opsional)
+    role: "ADMIN" as Role,
   });
 
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
+  // Initialize form with admin data when modal opens or admin changes
+  useEffect(() => {
+    if (open && admin) {
+      setForm({
+        name: admin.name || "",
+        username: admin.username || "",
+        email: admin.email || "",
+        password: "", // Biarkan kosong untuk edit
+        role: admin.role || "ADMIN",
+      });
+      setFormErrors({});
+      setShowPassword(false);
+    }
+  }, [open, admin]);
+
+  const resetForm = useCallback(() => {
+    if (admin) {
+      setForm({
+        name: admin.name || "",
+        username: admin.username || "",
+        email: admin.email || "",
+        password: "",
+        role: admin.role || "ADMIN",
+      });
+    }
+    setFormErrors({});
+    setShowPassword(false);
+  }, [admin]);
+
   const handleInputChange =
     (field: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) => {
       setForm((prev) => ({ ...prev, [field]: e.target.value }));
-      setFormErrors((prev) => {
-        const next = { ...prev };
-        delete next[field];
-        return next;
-      });
-    };
-
-  const handleSelectChange =
-    (field: keyof typeof form) => (e: React.ChangeEvent<HTMLSelectElement>) => {
-      setForm((prev) => ({ ...prev, [field]: e.target.value }));
+      if (formErrors[field]) {
+        setFormErrors((prev) => {
+          const next = { ...prev };
+          delete next[field];
+          return next;
+        });
+      }
     };
 
   const validate = () => {
     const errors: Record<string, string> = {};
-    if (!form.name.trim()) errors.name = "Nama wajib diisi";
-    if (!form.email.trim()) errors.email = "Email wajib diisi";
 
+    if (!form.name.trim()) errors.name = "Nama wajib diisi";
+    if (!form.username.trim()) errors.username = "Username wajib diisi";
+
+    if (!form.email.trim()) {
+      errors.email = "Email wajib diisi";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
+      errors.email = "Format email tidak valid";
+    }
+
+    // Password optional saat update, tapi kalau diisi harus minimal 6 karakter
     if (form.password && form.password.length < 6) {
       errors.password = "Password minimal 6 karakter";
     }
@@ -75,174 +120,320 @@ export default function AdminUpdateDialog({
 
     setIsSubmitting(true);
     try {
-      const payload: any = {
+      // Buat payload update, jika password kosong jangan kirim
+      const updateData: any = {
         name: form.name,
+        username: form.username,
         email: form.email,
         role: form.role,
       };
 
+      // Hanya kirim password jika diisi
       if (form.password.trim()) {
-        payload.password = form.password;
+        updateData.password = form.password;
       }
 
-      await updateAdmin(admin.id, payload);
+      const res = await updateAdmin(admin.id, updateData);
+      const updated = res?.data ?? res;
 
-      toast.success(`Admin ${form.name} berhasil diperbarui`);
-      onUpdated();
-      setFormErrors({});
+      toast.success(`${updated?.name || "Admin"} berhasil diperbarui`);
+
+      onUpdated?.(updated);
+      setOpen(false);
     } catch (err: any) {
       const apiErrors = err?.response?.data?.errors;
 
       if (apiErrors && typeof apiErrors === "object") {
         const fieldErrors: Record<string, string> = {};
-
         Object.entries(apiErrors).forEach(([field, messages]: any) => {
           if (Array.isArray(messages) && messages.length > 0) {
-            fieldErrors[field] = messages[0];
+            fieldErrors[field.toLowerCase()] = messages[0];
           }
         });
-
         setFormErrors(fieldErrors);
         return;
       }
+
+      toast.error(err?.response?.data?.message || "Gagal memperbarui admin");
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <Dialog open onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="sm:max-w-[520px]">
-        <DialogHeader className="space-y-1 border-b pb-4">
-          <DialogTitle className="text-xl font-bold text-gray-800">
-            Edit Admin
-          </DialogTitle>
-          <p className="text-sm text-muted-foreground">
-            Perbarui informasi admin
-          </p>
-        </DialogHeader>
+    <Dialog
+      open={open}
+      onOpenChange={(v) => {
+        setOpen(v);
+        if (!v) resetForm();
+      }}
+    >
+      <DialogTrigger asChild>{children}</DialogTrigger>
+
+      <DialogContent className="sm:max-w-[520px] max-w-[95vw] rounded-xl p-0 overflow-hidden border shadow-lg">
+        {/* Header dengan subtle gradient */}
+        <div className="bg-gradient-to-r from-blue-50 to-gray-50 px-6 pt-6 pb-4 border-b">
+          <DialogHeader>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <FiEdit2 className="h-5 w-5 text-blue-600" />
+              </div>
+              <div>
+                <DialogTitle className="text-lg font-semibold text-gray-800">
+                  Edit Admin
+                </DialogTitle>
+                <p className="text-sm text-gray-600 mt-1">
+                  Perbarui informasi admin {admin.name}
+                </p>
+              </div>
+            </div>
+          </DialogHeader>
+        </div>
 
         <form
           autoComplete="off"
-          className="grid grid-cols-1 sm:grid-cols-2 gap-5 py-4"
+          className="px-6 py-5 space-y-4"
           onSubmit={(e) => {
             e.preventDefault();
             submitUpdate();
           }}
         >
-          {/* NAME */}
-          <div className="space-y-1">
-            <Label>Nama Lengkap </Label>
-            <Input
-              id="name"
-              value={form.name}
-              onChange={handleInputChange("name")}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            {/* NAMA LENGKAP */}
+            <div className="space-y-2">
+              <Label
+                htmlFor="name"
+                className="text-sm font-medium text-gray-700"
+              >
+                Nama Lengkap <span className="text-red-500">*</span>
+              </Label>
+              <div className="relative">
+                <input
+                  id="name"
+                  type="text"
+                  value={form.name}
+                  onChange={handleInputChange("name")}
+                  className={cn(
+                    "w-full h-10 pl-10 pr-3 rounded-lg border text-sm",
+                    "bg-white focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100",
+                    formErrors.name
+                      ? "border-red-500 focus:border-red-500 focus:ring-red-100"
+                      : "border-gray-300",
+                    "transition-all duration-200",
+                  )}
+                  placeholder="Masukkan nama lengkap"
+                  disabled={isSubmitting}
+                />
+                <FiUser className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              </div>
+              {formErrors.name && (
+                <p className="text-sm text-red-600">{formErrors.name}</p>
+              )}
+            </div>
+
+            {/* USERNAME */}
+            <div className="space-y-2">
+              <Label
+                htmlFor="username"
+                className="text-sm font-medium text-gray-700"
+              >
+                Username <span className="text-red-500">*</span>
+              </Label>
+              <div className="relative">
+                <input
+                  id="username"
+                  type="text"
+                  autoComplete="off"
+                  value={form.username}
+                  onChange={handleInputChange("username")}
+                  className={cn(
+                    "w-full h-10 pl-10 pr-3 rounded-lg border text-sm",
+                    "bg-white focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100",
+                    formErrors.username
+                      ? "border-red-500 focus:border-red-500 focus:ring-red-100"
+                      : "border-gray-300",
+                    "transition-all duration-200",
+                  )}
+                  placeholder="snc23"
+                  disabled={isSubmitting}
+                />
+                <FiUser className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              </div>
+              {formErrors.username && (
+                <p className="text-sm text-red-600">{formErrors.username}</p>
+              )}
+            </div>
+
+            {/* EMAIL */}
+            <div className="space-y-2 sm:col-span-2">
+              <Label
+                htmlFor="email"
+                className="text-sm font-medium text-gray-700"
+              >
+                Email <span className="text-red-500">*</span>
+              </Label>
+              <div className="relative">
+                <input
+                  id="email"
+                  type="email"
+                  autoComplete="off"
+                  value={form.email}
+                  onChange={handleInputChange("email")}
+                  className={cn(
+                    "w-full h-10 pl-10 pr-3 rounded-lg border text-sm",
+                    "bg-white focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100",
+                    formErrors.email
+                      ? "border-red-500 focus:border-red-500 focus:ring-red-100"
+                      : "border-gray-300",
+                    "transition-all duration-200",
+                  )}
+                  placeholder="admin@example.com"
+                  disabled={isSubmitting}
+                />
+                <FiMail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              </div>
+              {formErrors.email && (
+                <p className="text-sm text-red-600">{formErrors.email}</p>
+              )}
+            </div>
+
+            {/* ROLE */}
+            <div className="space-y-2">
+              <Label
+                htmlFor="role"
+                className="text-sm font-medium text-gray-700"
+              >
+                Role
+              </Label>
+              <div className="relative">
+                <select
+                  id="role"
+                  value={form.role}
+                  onChange={(e) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      role: e.target.value as Role,
+                    }))
+                  }
+                  className={cn(
+                    "w-full h-10 pl-10 pr-10 rounded-lg border text-sm",
+                    "bg-white focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100",
+                    "border-gray-300 transition-all duration-200",
+                    "appearance-none cursor-pointer",
+                  )}
+                  disabled={isSubmitting}
+                >
+                  <option value="ADMIN">Admin</option>
+                  <option value="SUPERADMIN">Super Admin</option>
+                </select>
+                <FiShield className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                  <svg
+                    className="w-4 h-4 text-gray-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+            {/* PASSWORD */}
+            <div className="space-y-2">
+              <Label
+                htmlFor="password"
+                className="text-sm font-medium text-gray-700"
+              >
+                Password
+              </Label>
+              <div className="relative">
+                <input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  autoComplete="new-password"
+                  value={form.password}
+                  onChange={handleInputChange("password")}
+                  className={cn(
+                    "w-full h-10 pl-10 pr-10 rounded-lg border text-sm",
+                    "bg-white focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100",
+                    formErrors.password
+                      ? "border-red-500 focus:border-red-500 focus:ring-red-100"
+                      : "border-gray-300",
+                    "transition-all duration-200",
+                  )}
+                  disabled={isSubmitting}
+                  placeholder="Kosongkan jika tidak ingin mengubah"
+                />
+                <FiKey className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 p-1"
+                  aria-label={
+                    showPassword ? "Sembunyikan password" : "Tampilkan password"
+                  }
+                >
+                  {showPassword ? (
+                    <FiEyeOff className="h-4 w-4" />
+                  ) : (
+                    <FiEye className="h-4 w-4" />
+                  )}
+                </button>
+              </div>
+              {formErrors.password ? (
+                <p className="text-sm text-red-600">{formErrors.password}</p>
+              ) : (
+                <p className="text-xs text-gray-500">
+                  Biarkan kosong jika tidak ingin mengubah password
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* ACTION BUTTONS */}
+          <div className="flex justify-end gap-3 pt-5 border-t">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setOpen(false)}
               className={cn(
-                "focus-visible:ring-2 focus-visible:ring-offset-2",
-                formErrors.name
-                  ? "border-red-500 focus-visible:ring-red-500"
-                  : "focus-visible:ring-blue-500",
+                "h-10 px-4 rounded-lg font-medium transition-all duration-200",
+                "border-gray-300 hover:bg-gray-50 hover:border-gray-400",
+                "focus:outline-none focus:ring-4 focus:ring-gray-100",
               )}
               disabled={isSubmitting}
-            />
-
-            {formErrors.name && (
-              <p className="text-sm text-red-500">{formErrors.name}</p>
-            )}
-          </div>
-
-          {/* USERNAME (READONLY) */}
-          <div className="space-y-1">
-            <Label>Username</Label>
-            <Input
-              value={form.username}
-              disabled
-              className="bg-gray-50 text-gray-500 cursor-not-allowed"
-            />
-            <p className="text-xs text-blue-600">Username tidak bisa diubah</p>
-          </div>
-
-          {/* ROLE */}
-          <div className="space-y-1">
-            <Label>Role</Label>
-            <select
-              value={form.role}
-              onChange={handleSelectChange("role")}
-              className="w-full rounded-md border px-3 py-2 text-sm"
             >
-              <option value="ADMIN">Admin</option>
-              <option value="SUPERADMIN">Super Admin</option>
-            </select>
-          </div>
-
-          {/* EMAIL */}
-          <div className="space-y-1">
-            <Label>Email</Label>
-            <Input
-              type="email"
-              value={form.email}
-              onChange={handleInputChange("email")}
-              className={cn(
-                "focus-visible:ring-2 focus-visible:ring-offset-2",
-                formErrors.email
-                  ? "border-red-500 focus-visible:ring-red-500"
-                  : "focus-visible:ring-blue-500",
-              )}
-              disabled={isSubmitting}
-            />
-            {formErrors.email && (
-              <p className="text-sm text-red-500">{formErrors.email}</p>
-            )}
-          </div>
-
-          {/* PASSWORD (OPTIONAL) */}
-          <div className="space-y-2 sm:col-span-2">
-            <Label>Password (opsional)</Label>
-            <Input
-              type="password"
-              autoComplete="new-password"
-              placeholder="Kosongkan jika tidak diubah"
-              value={form.password}
-              onChange={handleInputChange("password")}
-              className={cn(
-                "focus-visible:ring-2 focus-visible:ring-offset-2",
-                formErrors.phone
-                  ? "border-red-500 focus-visible:ring-red-500"
-                  : "focus-visible:ring-blue-500",
-              )}
-              disabled={isSubmitting}
-            />
-            {formErrors.password && (
-              <p className="text-sm text-red-500">{formErrors.password}</p>
-            )}
-          </div>
-
-          <div className="flex justify-end gap-3 pt-2 sm:col-span-2">
-            <Button variant="outline" type="button" onClick={onClose}>
               Batal
             </Button>
 
             <Button
               type="submit"
-              className="
-              bg-linear-to-r from-blue-500 to-cyan-600
-            hover:from-blue-600 hover:to-cyan-700
-              shadow-sm hover:shadow-md
-              transition-all
-              duration-200
-              gap-3
-              pt-2
-              sm:col-span-2
-              text-sm
-              font-medium
-              rounded-sm"
               disabled={isSubmitting}
+              className={cn(
+                "h-10 px-4 rounded-lg font-medium transition-all duration-200",
+                "bg-blue-600 hover:bg-blue-700 text-white",
+                "focus:outline-none focus:ring-4 focus:ring-blue-100",
+                "disabled:opacity-50 disabled:cursor-not-allowed",
+              )}
             >
               {isSubmitting ? (
-                <Loader2 className="h-5 w-5 animate-spin text-white" />
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Menyimpan...
+                </>
               ) : (
-                "Simpan"
-              )}{" "}
+                <>
+                  <Download className="mr-2 h-4 w-4" />
+                  Perbarui
+                </>
+              )}
             </Button>
           </div>
         </form>

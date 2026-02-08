@@ -1,20 +1,6 @@
 import axios from "axios";
 import { api } from "./axios";
-
-export type UserRole = "ADMIN" | "SUPERADMIN";
-
-export type AuthUser = {
-  id: string;
-  name: string;
-  email: string;
-  username: string;
-  role: UserRole;
-};
-
-export type AuthResponse = {
-  success: AuthUser;
-  user: AuthUser;
-};
+import type { AuthResponse } from "@/lib/types/auth";
 
 export const login = async (
   username: string,

@@ -1,324 +1,122 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { ArrowUp, ArrowDown } from "lucide-react";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import Image from "next/image";
-import { motion, useScroll, useTransform } from "framer-motion";
+import { useEffect, useState, useCallback } from "react";
+import { motion } from "framer-motion";
 
-type DebtRecord = {
-  id: number;
-  name: string;
-  total: number;
-  bayar: number;
-  tagihan: number;
-};
+import { getPublicDebts } from "@/lib/api/debt";
+import PublicTable from "./PublicTable";
+import { SearchInput } from "../shared/search-input";
+import { Pagination } from "../shared/pagination";
+import { PublicDebt } from "@/lib/types/debt-cycle";
 
-export default function DebtTable() {
-  // Sample data
-  const allData = useMemo<DebtRecord[]>(
-    () => [
-      { id: 1, name: "Andre", total: 10000, bayar: 3000, tagihan: 7000 },
-      { id: 2, name: "Ilda", total: 12000, bayar: 10000, tagihan: 2000 },
-      { id: 3, name: "Rehan", total: 20000, bayar: 15000, tagihan: 5000 },
-      { id: 4, name: "Sufi", total: 13000, bayar: 10000, tagihan: 3000 },
-      { id: 5, name: "Denis", total: 10000, bayar: 9000, tagihan: 1000 },
-    ],
-    []
+export default function DebtPage() {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isSearching, setIsSearching] = useState(false);
+
+  const [data, setData] = useState<PublicDebt[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+
+  /**
+   * FETCH
+   * selalu pakai parameter,
+   * jangan tergantung state luar
+   */
+  const fetchDebts = useCallback(
+    async ({ search = "", page = 1 }: { search?: string; page?: number }) => {
+      try {
+        setLoading(true);
+
+        const items = await getPublicDebts(search);
+        setData(items);
+
+        // nanti kalau backend kirim meta
+        setTotalPages(1);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [],
   );
 
-  const [search, setSearch] = useState("");
-  const [perPage, setPerPage] = useState(5);
-  const [page, setPage] = useState(1);
+  /**
+   * INITIAL LOAD
+   */
+  useEffect(() => {
+    fetchDebts({ search: "", page: 1 });
+  }, [fetchDebts]);
 
-  const [sortConfig, setSortConfig] = useState<{
-    key: keyof DebtRecord;
-    direction: "asc" | "desc";
-  } | null>(null);
+  /**
+   * SEARCH
+   * pattern sama kayak admin
+   */
+  useEffect(() => {
+    const active = searchQuery.trim().length > 0;
+    setIsSearching(active);
 
-  // Scroll animation setup
-  const { scrollYProgress } = useScroll();
-  const fadeOut = useTransform(scrollYProgress, [0.45, 0.65], [1, 0]);
-  const parallax = useTransform(scrollYProgress, [0, 1], [0, -150]);
-  const floatAnim = { y: [0, -10, 0] };
+    setLoading(true); // cegah flicker
 
-  const filteredData = useMemo(() => {
-    return allData.filter((item) =>
-      item.name.toLowerCase().includes(search.toLowerCase())
-    );
-  }, [allData, search]);
+    const t = setTimeout(() => {
+      setCurrentPage(1);
+      fetchDebts({ search: searchQuery, page: 1 });
+    }, 300);
 
-  const sortedData = useMemo(() => {
-    const sortable = [...filteredData];
-    if (sortConfig) {
-      sortable.sort((a, b) => {
-        const aKey = a[sortConfig.key];
-        const bKey = b[sortConfig.key];
-
-        if (typeof aKey === "string") {
-          return sortConfig.direction === "asc"
-            ? aKey.localeCompare(bKey as string)
-            : (bKey as string).localeCompare(aKey);
-        }
-        if (typeof aKey === "number") {
-          return sortConfig.direction === "asc"
-            ? aKey - (bKey as number)
-            : (bKey as number) - aKey;
-        }
-        return 0;
-      });
-    }
-    return sortable;
-  }, [filteredData, sortConfig]);
-
-  const totalPages = Math.ceil(sortedData.length / perPage);
-  const paginated = sortedData.slice((page - 1) * perPage, page * perPage);
-
-  const requestSort = (key: keyof DebtRecord) => {
-    let direction: "asc" | "desc" = "asc";
-    if (sortConfig?.key === key && sortConfig.direction === "asc") {
-      direction = "desc";
-    }
-    setSortConfig({ key, direction });
-  };
+    return () => clearTimeout(t);
+  }, [searchQuery, fetchDebts]);
 
   return (
-    <main className="relative w-full min-h-screen bg-linear-to-br from-[#67C3F3] to-[#5A98F2] overflow-hidden">
-      {/* Overlay agar warna biru tidak menenggelamkan text */}
-      <div className="absolute inset-0 bg-white/10 pointer-events-none z-0"></div>
-
+    <main className="bg-linear-to-br from-white via-gray-50 to-blue-50 overflow-hidden px-4 py-10">
       <motion.section
         id="debt"
-        className="min-h-screen w-full px-4 sm:px-6 lg:px-8 pt-28 scroll-mt-32 relative z-10"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="min-h-screen px-4 md:px-8 lg:px-16 flex flex-col items-center justify-center scroll-mt-32 relative"
       >
-        {/* Floating Background Icon */}
-        <motion.div
-          animate={floatAnim}
-          transition={{
-            duration: 4,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-          className="absolute top-14 right-4 opacity-30 z-0 pointer-events-none"
-        >
-          <Image src="/bullet.svg" width={160} height={160} alt="bg" />
-        </motion.div>
+        <h1 className="text-4xl font-bold lg:text-5xl bg-linear-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+          Cek Tagihan
+        </h1>
+        <motion.span
+          className="mt-4 h-1 w-20 bg-linear-to-r from-blue-500 to-purple-500 rounded-full"
+          initial={{ width: 0 }}
+          whileInView={{ width: 80 }}
+          transition={{ duration: 0.8 }}
+        ></motion.span>
 
-        <motion.h2
-          className="mb-30 -mt-4 text-3xl font-bold text-white text-center relative z-20"
-          initial={{ opacity: 0, y: -30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-        >
-          Tabel Pencatatan
-        </motion.h2>
+        {/* search */}
+        <div className="mt-8 mb-6 flex justify-center sm:justify-end w-full max-w-5xl">
+          <SearchInput
+            placeholder="Cari nama user..."
+            onSearch={setSearchQuery}
+            className="w-full sm:w-64"
+          />
+        </div>
 
-        {/* PARALLAX WRAPPER */}
-        <motion.div style={{ y: parallax }} className="relative z-10">
-          {/* Header bar */}
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
-            className="flex flex-col md:flex-row md:justify-between items-center gap-4 mb-4"
-          >
-            <div className="flex items-center gap-2 text-white">
-              <span className="text-sm">Show</span>
-              <Select
-                value={perPage.toString()}
-                onValueChange={(val: any) => {
-                  setPerPage(Number(val));
-                  setPage(1);
-                }}
-              >
-                <SelectTrigger className="w-[70px] bg-white text-black">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {[5, 10, 20].map((n) => (
-                    <SelectItem key={n} value={n.toString()}>
-                      {n}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <span className="text-sm">entries</span>
-            </div>
+        {/* table */}
+        <div className="w-full max-w-5xl">
+          <PublicTable
+            items={data}
+            loading={loading}
+            emptyState={isSearching ? "search" : "initial"}
+          />
+        </div>
 
-            <Input
-              placeholder="Search by name..."
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
-                setPage(1);
+        {/* pagination */}
+        {data.length > 0 && (
+          <div className="mt-6 w-full max-w-5xl">
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={(page) => {
+                setCurrentPage(page);
+                fetchDebts({ search: searchQuery, page });
               }}
-              className="max-w-sm bg-white"
             />
-          </motion.div>
-
-          {/* TABLE */}
-          <motion.div
-            initial={{ opacity: 0, y: 40 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-          >
-            <Table className="w-full bg-white shadow-xl rounded-xl">
-              {/* ✅ Bagian Header BENAR */}
-              <TableHeader>
-                <TableRow>
-                  {/* NO */}
-                  <TableHead
-                    className="text-center cursor-pointer select-none"
-                    onClick={() => requestSort("id")}
-                  >
-                    <div className="flex items-center justify-center gap-1">
-                      No
-                      {sortConfig?.key === "id" ? (
-                        sortConfig.direction === "asc" ? (
-                          <ArrowUp size={18} className="text-gray-700" />
-                        ) : (
-                          <ArrowDown size={18} className="text-gray-700" />
-                        )
-                      ) : (
-                        <ArrowUp
-                          size={18}
-                          className="opacity-30 text-gray-500"
-                        />
-                      )}
-                    </div>
-                  </TableHead>
-
-                  {/* NAMA */}
-                  <TableHead
-                    className="text-center cursor-pointer select-none"
-                    onClick={() => requestSort("name")}
-                  >
-                    <div className="flex items-center justify-center gap-1">
-                      Nama
-                      {sortConfig?.key === "name" ? (
-                        sortConfig.direction === "asc" ? (
-                          <ArrowUp size={18} className="text-gray-700" />
-                        ) : (
-                          <ArrowDown size={18} className="text-gray-700" />
-                        )
-                      ) : (
-                        <ArrowUp
-                          size={18}
-                          className="opacity-30 text-gray-500"
-                        />
-                      )}
-                    </div>
-                  </TableHead>
-
-                  {/* TOTAL */}
-                  <TableHead
-                    className="text-center cursor-pointer select-none"
-                    onClick={() => requestSort("total")}
-                  >
-                    <div className="flex items-center justify-center gap-1">
-                      Total
-                      {sortConfig?.key === "total" ? (
-                        sortConfig.direction === "asc" ? (
-                          <ArrowUp size={18} className="text-gray-700" />
-                        ) : (
-                          <ArrowDown size={18} className="text-gray-700" />
-                        )
-                      ) : (
-                        <ArrowUp
-                          size={18}
-                          className="opacity-30 text-gray-500"
-                        />
-                      )}
-                    </div>
-                  </TableHead>
-
-                  {/* BAYAR */}
-                  <TableHead
-                    className="text-center cursor-pointer select-none"
-                    onClick={() => requestSort("bayar")}
-                  >
-                    <div className="flex items-center justify-center gap-1">
-                      Bayar
-                      {sortConfig?.key === "bayar" ? (
-                        sortConfig.direction === "asc" ? (
-                          <ArrowUp size={18} className="text-gray-700" />
-                        ) : (
-                          <ArrowDown size={18} className="text-gray-700" />
-                        )
-                      ) : (
-                        <ArrowUp
-                          size={18}
-                          className="opacity-30 text-gray-500"
-                        />
-                      )}
-                    </div>
-                  </TableHead>
-
-                  {/* TAGIHAN */}
-                  <TableHead
-                    className="text-center cursor-pointer select-none"
-                    onClick={() => requestSort("tagihan")}
-                  >
-                    <div className="flex items-center justify-center gap-1">
-                      Tagihan
-                      {sortConfig?.key === "tagihan" ? (
-                        sortConfig.direction === "asc" ? (
-                          <ArrowUp size={18} className="text-gray-700" />
-                        ) : (
-                          <ArrowDown size={18} className="text-gray-700" />
-                        )
-                      ) : (
-                        <ArrowUp
-                          size={18}
-                          className="opacity-30 text-gray-500"
-                        />
-                      )}
-                    </div>
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-
-              {/* ✅ Bagian Body BENAR */}
-              <TableBody>
-                {paginated.map((record, i) => (
-                  <TableRow key={record.id}>
-                    <TableCell className="text-center">
-                      {(page - 1) * perPage + i + 1}
-                    </TableCell>
-                    <TableCell className="text-center">{record.name}</TableCell>
-                    <TableCell className="text-center">
-                      {record.total}
-                    </TableCell>
-                    <TableCell className="text-center">
-                      {record.bayar}
-                    </TableCell>
-                    <TableCell className="text-center">
-                      {record.tagihan}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </motion.div>
-        </motion.div>
+          </div>
+        )}
       </motion.section>
     </main>
   );

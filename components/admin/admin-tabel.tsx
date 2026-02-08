@@ -1,6 +1,6 @@
 "use client";
 
-import React, { memo } from "react";
+import React from "react";
 import type { Admin } from "@/lib/types/admin";
 import Image from "next/image";
 import {
@@ -19,17 +19,18 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, Edit, Trash2, Mail } from "lucide-react";
+import { MoreHorizontal, Edit, Trash2, Mail, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import AdminUpdateDialog from "@/components/admin/admin-update-dialog";
+import AdminDeleteDialog from "@/components/admin/admin-delete-dialog";
 
 type EmptyState = "initial" | "search";
 
 type Props = {
   data: Admin[];
   emptyState: EmptyState;
-  onEdit: (admin: Admin) => void;
-  onDelete: (admin: Admin) => void;
+  onRefresh?: () => void;
 };
 
 async function copyToClipboard(text: string) {
@@ -41,7 +42,7 @@ async function copyToClipboard(text: string) {
   }
 }
 
-function AdminTable({ data, emptyState = "initial", onEdit, onDelete }: Props) {
+function AdminTable({ data, emptyState = "initial", onRefresh }: Props) {
   if (data.length === 0) {
     return (
       <div className="rounded-xl bg-white py-10">
@@ -68,7 +69,7 @@ function AdminTable({ data, emptyState = "initial", onEdit, onDelete }: Props) {
               {emptyState === "search" ? (
                 <>Admin yang kamu cari nggak ada. Coba pakai kata lain ya</>
               ) : (
-                <>"Belum ada admin. Yuk tambahin dulu biar bisa mulai ngatur</>
+                <>Belum ada admin. Yuk tambahin dulu biar bisa mulai ngatur</>
               )}
             </p>
           </div>
@@ -77,7 +78,7 @@ function AdminTable({ data, emptyState = "initial", onEdit, onDelete }: Props) {
     );
   }
 
-  const handlecopy = async (
+  const handleCopy = async (
     text?: string,
     label: "username" | "email" = "username",
   ) => {
@@ -85,8 +86,17 @@ function AdminTable({ data, emptyState = "initial", onEdit, onDelete }: Props) {
 
     const ok = await copyToClipboard(text);
     if (ok) {
-      toast.info(label === "username" ? "Username disalin" : "Email disalin");
+      toast.success(
+        label === "username" ? "Username disalin" : "Email disalin",
+        { duration: 2000 },
+      );
+    } else {
+      toast.error("Gagal menyalin");
     }
+  };
+
+  const handleCopyEmail = (email: string) => {
+    handleCopy(email, "email");
   };
 
   return (
@@ -95,7 +105,7 @@ function AdminTable({ data, emptyState = "initial", onEdit, onDelete }: Props) {
         <TableHeader className="bg-muted/40">
           <TableRow>
             <TableHead>Nama</TableHead>
-            <TableHead>User Name</TableHead>
+            <TableHead>Username</TableHead>
             <TableHead>Email</TableHead>
             <TableHead>Role</TableHead>
             <TableHead>Dibuat</TableHead>
@@ -105,11 +115,11 @@ function AdminTable({ data, emptyState = "initial", onEdit, onDelete }: Props) {
 
         <TableBody>
           {data.map((admin) => (
-            <TableRow key={admin.id}>
+            <TableRow key={admin.id} className="hover:bg-gray-50/50">
               {/* NAMA */}
               <TableCell>
                 <div className="flex items-center gap-3">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted text-sm font-medium">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-blue-100 to-blue-200 text-sm font-medium text-blue-700">
                     {admin.name
                       ? admin.name
                           .split(" ")
@@ -118,32 +128,44 @@ function AdminTable({ data, emptyState = "initial", onEdit, onDelete }: Props) {
                           .join("")
                       : admin.username[0]}
                   </div>
-                  <span className="text-sm font-medium">{admin.name}</span>
+                  <span className="text-sm font-medium text-gray-800">
+                    {admin.name}
+                  </span>
                 </div>
               </TableCell>
 
               {/* USERNAME */}
-              <TableCell className="text-sm">{admin.username}</TableCell>
+              <TableCell>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm  text-gray-700">
+                    {admin.username}
+                  </span>
+                </div>
+              </TableCell>
 
               {/* EMAIL */}
-              <TableCell className="text-sm">{admin.email}</TableCell>
+              <TableCell>
+                <span className="text-sm text-gray-600 truncate block max-w-[200px]">
+                  {admin.email}
+                </span>
+              </TableCell>
 
               {/* ROLE */}
               <TableCell>
                 <span
-                  className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium
+                  className={`inline-flex items-center rounded-sm px-3 py-1 text-xs font-medium
                  ${
                    admin.role === "SUPERADMIN"
-                     ? "border border-red-500 bg-red-100 text-red-700"
-                     : "border border-blue-500 bg-blue-100 text-blue-700"
+                     ? "bg-gradient-to-r from-red-50 to-pink-50 border border-red-200 text-red-700"
+                     : "bg-gradient-to-r from-blue-50 to-cyan-50 border border-blue-200 text-blue-700"
                  }`}
                 >
-                  {admin.role}
+                  {admin.role === "SUPERADMIN" ? "Super Admin" : "Admin"}
                 </span>
               </TableCell>
 
-              {/* CREATED */}
-              <TableCell className="text-sm">
+              {/* CREATED AT */}
+              <TableCell className="text-sm text-gray-600">
                 {admin.createdAt
                   ? new Date(admin.createdAt).toLocaleDateString("id-ID", {
                       day: "numeric",
@@ -153,59 +175,64 @@ function AdminTable({ data, emptyState = "initial", onEdit, onDelete }: Props) {
                   : "-"}
               </TableCell>
 
-              {/* ACTION */}
+              {/* ACTION - Hanya Dropdown */}
               <TableCell className="text-right">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 w-8 p-0 hover:bg-gray-100"
+                    >
                       <MoreHorizontal className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
 
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuLabel>Aksi</DropdownMenuLabel>
+                  <DropdownMenuContent align="end" className="w-48">
+                    <DropdownMenuLabel className="text-xs font-semibold">
+                      Aksi untuk {admin.name}
+                    </DropdownMenuLabel>
                     <DropdownMenuSeparator />
 
+                    {/* Salin Username */}
                     <DropdownMenuItem
-                      onClick={() => handlecopy(admin.username, "username")}
-                      className=" text-blue-800
-                          data-highlighted:bg-blue-200
-                          data-highlighted:text-blue-600
-                          focus:bg-blue-200
-                          focus:text-blue-400"
-                      aria-label={`Salin username ${admin.username}`}
+                      onClick={() => handleCopy(admin.username, "username")}
+                      className="text-sm cursor-pointer gap-2"
                     >
-                      <Mail className="mr-2 h-4 w-4 text-blue-600" />
-                      Salin Username
+                      <Copy className="h-4 w-4 text-blue-600" />
+                      <span>Salin Username</span>
                     </DropdownMenuItem>
 
+                    {/* Salin Email */}
                     <DropdownMenuItem
-                      onClick={() => onEdit(admin)}
-                      className=" 
-                          text-blue-800
-                          data-highlighted:bg-blue-200
-                          data-highlighted:text-blue-600
-                          focus:bg-blue-200
-                          focus:text-blue-400"
-                      aria-label={`Edit user ${admin.name}`}
+                      onClick={() => handleCopyEmail(admin.email)}
+                      className="text-sm cursor-pointer gap-2"
                     >
-                      <Edit className="mr-2 h-4 w-4 text-blue-600" />
-                      Edit
+                      <Mail className="h-4 w-4 text-blue-600" />
+                      <span>Salin Email</span>
                     </DropdownMenuItem>
 
-                    <DropdownMenuItem
-                      onClick={() => onDelete(admin)}
-                      className="te text-red-700
-                          data-highlighted:bg-red-200
-                          data-highlighted:text-red-600
-                          focus:bg-red-200
-                          focus:text-red-600
-  "
-                      aria-label={`Hapus user ${admin.name}`}
-                    >
-                      <Trash2 className="mr-2 h-4 w-4 text-red-600" />
-                      Hapus
-                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+
+                    {/* Edit via Modal */}
+                    <div className="relative">
+                      <AdminUpdateDialog admin={admin} onUpdated={onRefresh}>
+                        <div className="relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-blue-50 hover:text-blue-700 data-[disabled]:pointer-events-none data-[disabled]:opacity-50 gap-2">
+                          <Edit className="h-4 w-4 text-blue-600" />
+                          <span>Edit Admin</span>
+                        </div>
+                      </AdminUpdateDialog>
+                    </div>
+
+                    {/* Delete via Modal */}
+                    <div className="relative">
+                      <AdminDeleteDialog admin={admin} onDeleted={onRefresh}>
+                        <div className="relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-red-50 hover:text-red-700 data-[disabled]:pointer-events-none data-[disabled]:opacity-50 gap-2">
+                          <Trash2 className="h-4 w-4 text-red-600" />
+                          <span className="text-red-600">Hapus Admin</span>
+                        </div>
+                      </AdminDeleteDialog>
+                    </div>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </TableCell>
@@ -217,4 +244,4 @@ function AdminTable({ data, emptyState = "initial", onEdit, onDelete }: Props) {
   );
 }
 
-export default memo(AdminTable);
+export default AdminTable;

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { memo } from "react";
+import React from "react";
 import type { User } from "@/lib/types/user";
 import Image from "next/image";
 import {
@@ -19,17 +19,18 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, Edit, Trash2, Phone, MapPin } from "lucide-react";
+import { MoreHorizontal, Edit, Trash2, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import UserUpdateDialog from "@/components/users/user-update-dialog";
+import UserDeleteDialog from "@/components/users/user-delete-dialog";
 
-type EmptyStateType = "initial" | "search";
+type EmptyState = "initial" | "search";
 
 type Props = {
   data: User[];
-  emptyState?: EmptyStateType;
-  onEdit: (user: User) => void;
-  onDelete: (user: User) => void;
+  emptyState: EmptyState;
+  onRefresh?: () => void;
 };
 
 async function copyToClipboard(text: string) {
@@ -41,7 +42,7 @@ async function copyToClipboard(text: string) {
   }
 }
 
-function UserTable({ data, emptyState = "initial", onEdit, onDelete }: Props) {
+function UserTable({ data, emptyState = "initial", onRefresh }: Props) {
   if (data.length === 0) {
     return (
       <div className="rounded-xl bg-white py-10">
@@ -58,7 +59,6 @@ function UserTable({ data, emptyState = "initial", onEdit, onDelete }: Props) {
               height={160}
               className="mb-6"
             />
-
             <h3 className="text-lg font-semibold text-foreground">
               {emptyState === "search"
                 ? "Yah, nggak ketemu"
@@ -67,9 +67,9 @@ function UserTable({ data, emptyState = "initial", onEdit, onDelete }: Props) {
 
             <p className="text-sm mt-1 text-gray-500">
               {emptyState === "search" ? (
-                <>Admin yang kamu cari nggak ada. Coba pakai kata lain ya</>
+                <>User yang kamu cari nggak ada. Coba pakai kata lain ya</>
               ) : (
-                <>"Belum ada admin. Yuk tambahin dulu biar bisa mulai ngatur</>
+                <>Belum ada user. Yuk tambahin dulu biar bisa mulai ngatur</>
               )}
             </p>
           </div>
@@ -78,17 +78,17 @@ function UserTable({ data, emptyState = "initial", onEdit, onDelete }: Props) {
     );
   }
 
-  const handleCopy = async (
-    text?: string,
-    label: "telepon" | "alamat" = "telepon",
-  ) => {
+  const handleCopy = async (text?: string, label: "phone" = "phone") => {
     if (!text) return;
 
     const ok = await copyToClipboard(text);
     if (ok) {
-      toast.info(
-        label === "telepon" ? "Nomor telepon disalin" : "Alamat disalin",
+      toast.success(
+        label === "phone" ? "✅ Nomor telepon disalin" : "✅ Data disalin",
+        { duration: 2000 },
       );
+    } else {
+      toast.error("❌ Gagal menyalin");
     }
   };
 
@@ -107,14 +107,11 @@ function UserTable({ data, emptyState = "initial", onEdit, onDelete }: Props) {
 
         <TableBody>
           {data.map((user) => (
-            <TableRow key={user.id}>
+            <TableRow key={user.id} className="hover:bg-gray-50/50">
+              {/* NAMA */}
               <TableCell>
                 <div className="flex items-center gap-3">
-                  <div
-                    aria-hidden
-                    className="flex h-8 w-8 items-center justify-center rounded-full bg-muted text-sm font-medium"
-                    title={user.name}
-                  >
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-linear-to-br from-blue-100 to-blue-200 text-sm font-medium text-blue-700">
                     {user.name
                       ? user.name
                           .split(" ")
@@ -123,14 +120,33 @@ function UserTable({ data, emptyState = "initial", onEdit, onDelete }: Props) {
                           .join("")
                       : "U"}
                   </div>
-                  <span className="text-sm font-medium text-foreground">
-                    {user.name ?? "-"}
+                  <span className="text-sm font-medium text-gray-800">
+                    {user.name}
                   </span>
                 </div>
               </TableCell>
-              <TableCell className="text-sm">{user.phone ?? "-"}</TableCell>
-              <TableCell className="text-sm">{user.address ?? "-"}</TableCell>
-              <TableCell className="text-sm">
+
+              {/* TELEPON */}
+              <TableCell>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-600">{user.phone}</span>
+                  <button
+                    onClick={() => handleCopy(user.phone, "phone")}
+                    className="p-1 text-gray-400 hover:text-blue-600"
+                    aria-label={`Salin nomor telepon ${user.phone}`}
+                  ></button>
+                </div>
+              </TableCell>
+
+              {/* ALAMAT */}
+              <TableCell>
+                <span className="text-sm text-gray-600 truncate block max-w-[250px]">
+                  {user.address || "-"}
+                </span>
+              </TableCell>
+
+              {/* CREATED AT */}
+              <TableCell className="text-sm text-gray-600">
                 {user.createdAt
                   ? new Date(user.createdAt).toLocaleDateString("id-ID", {
                       day: "numeric",
@@ -140,79 +156,53 @@ function UserTable({ data, emptyState = "initial", onEdit, onDelete }: Props) {
                   : "-"}
               </TableCell>
 
-              {/* ACTIONS */}
+              {/* ACTION - Hanya Dropdown */}
               <TableCell className="text-right">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 w-8 p-0 hover:bg-gray-100"
+                    >
                       <MoreHorizontal className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
 
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuLabel className="text-blue-800">
+                  <DropdownMenuContent align="end" className="w-38">
+                    <DropdownMenuLabel className="text-xs font-semibold">
                       Aksi
                     </DropdownMenuLabel>
                     <DropdownMenuSeparator />
 
+                    {/* Salin Nomor Telepon */}
                     <DropdownMenuItem
-                      onClick={() => handleCopy(user.phone, "telepon")}
-                      className=" 
-                          text-blue-800
-                          data-highlighted:bg-blue-200
-                          data-highlighted:text-blue-600
-                          focus:bg-blue-200
-                          focus:text-blue-400"
-                      aria-label={` ${user.name}Nomor telepon berhasil disalin`}
+                      onClick={() => handleCopy(user.phone, "phone")}
+                      className="text-sm cursor-pointer gap-2"
                     >
-                      <Phone className="mr-2 h-4 w-4 text-blue-600" />
-                      Salin Telepon
+                      <Copy className="h-4 w-4 text-blue-600" />
+                      <span>Salin Telepon</span>
                     </DropdownMenuItem>
 
-                    <DropdownMenuItem
-                      onClick={() =>
-                        handleCopy(user.address ?? undefined, "alamat")
-                      }
-                      className=" 
-                          text-blue-800
-                          data-highlighted:bg-blue-200
-                          data-highlighted:text-blue-600
-                          focus:bg-blue-200
-                          focus:text-blue-400"
-                      aria-label={`Salin alamat ${user.name}`}
-                    >
-                      <MapPin className="mr-2 h-4 w-4 text-blue-600" />
-                      Salin Alamat
-                    </DropdownMenuItem>
+                    {/* Edit via Modal */}
+                    <div className="relative">
+                      <UserUpdateDialog user={user} onUpdated={onRefresh}>
+                        <div className="relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-blue-50 hover:text-blue-700 data-disabled:pointer-events-none data-disabled:opacity-50 gap-2">
+                          <Edit className="h-4 w-4 text-blue-600" />
+                          <span>Edit User</span>
+                        </div>
+                      </UserUpdateDialog>
+                    </div>
 
-                    <DropdownMenuItem
-                      onClick={() => onEdit(user)}
-                      className=" 
-                          text-blue-800
-                          data-highlighted:bg-blue-200
-                          data-highlighted:text-blue-600
-                          focus:bg-blue-200
-                          focus:text-blue-400"
-                      aria-label={`Edit user ${user.name}`}
-                    >
-                      <Edit className="mr-2 h-4 w-4 text-blue-600" />
-                      Edit
-                    </DropdownMenuItem>
-
-                    <DropdownMenuItem
-                      onClick={() => onDelete(user)}
-                      className="
-                          text-red-700
-                          data-highlighted:bg-red-200
-                          data-highlighted:text-red-600
-                          focus:bg-red-200
-                          focus:text-red-600
-  "
-                      aria-label={`Hapus user ${user.name}`}
-                    >
-                      <Trash2 className="mr-2 h-4 w-4 text-red-600" />
-                      Hapus
-                    </DropdownMenuItem>
+                    {/* Delete via Modal */}
+                    <div className="relative">
+                      <UserDeleteDialog user={user} onDeleted={onRefresh}>
+                        <div className="relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-red-50 hover:text-red-700 data-disabled:pointer-events-none data-disabled:opacity-50 gap-2">
+                          <Trash2 className="h-4 w-4 text-red-600" />
+                          <span className="text-red-600">Hapus User</span>
+                        </div>
+                      </UserDeleteDialog>
+                    </div>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </TableCell>
@@ -224,4 +214,4 @@ function UserTable({ data, emptyState = "initial", onEdit, onDelete }: Props) {
   );
 }
 
-export default memo(UserTable);
+export default UserTable;

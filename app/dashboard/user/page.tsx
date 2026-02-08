@@ -1,4 +1,3 @@
-// app/users/page.tsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -6,11 +5,10 @@ import type { User } from "@/lib/types/user";
 import UserTable from "@/components/users/user-tabel";
 import { getUsers } from "@/lib/api/user";
 import UserCreateDialog from "@/components/users/user-create-dialog";
-import UserUpdateDialog from "@/components/users/user-update-dialog";
-import UserDeleteDialog from "@/components/users/user-delete-dialog";
 import { Card, CardHeader } from "@/components/ui/card";
-import { SearchInput } from "@/components/search-input";
-import { Pagination } from "@/components/pagination";
+import { SearchInput } from "@/components/shared/search-input";
+import { Pagination } from "@/components/shared/pagination";
+import { TableSkeleton } from "@/components/shared/table-skeleton";
 
 export default function UsersPage() {
   const [currentPage, setCurrentPage] = useState(1);
@@ -19,9 +17,6 @@ export default function UsersPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
-
-  const [editingUser, setEditingUser] = useState<User | null>(null);
-  const [deletingUser, setDeletingUser] = useState<User | null>(null);
 
   // FETCH
   const fetchUsers = async (opts?: { search?: string; page?: number }) => {
@@ -34,7 +29,6 @@ export default function UsersPage() {
       });
 
       setUsers(res?.data?.items ?? []);
-      // setUsers([]);
       setCurrentPage(res.pagination?.currentPage ?? 1);
       setTotalPages(res.pagination?.totalPages ?? 1);
     } finally {
@@ -59,9 +53,6 @@ export default function UsersPage() {
 
     return () => clearTimeout(t);
   }, [searchQuery]);
-
-  const handleEdit = (user: User) => setEditingUser(user);
-  const handleDelete = (user: User) => setDeletingUser(user);
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
@@ -93,15 +84,16 @@ export default function UsersPage() {
         </CardHeader>
 
         {loading ? (
-          <div className="p-8 text-center">Memuat data...</div>
+          <div className="overflow-x-auto p-6">
+            <TableSkeleton />
+          </div>
         ) : (
           <>
             <div className="overflow-x-auto p-2">
               <UserTable
                 data={users}
                 emptyState={isSearching ? "search" : "initial"}
-                onEdit={handleEdit}
-                onDelete={handleDelete}
+                onRefresh={fetchUsers}
               />
             </div>
 
@@ -120,30 +112,6 @@ export default function UsersPage() {
           </>
         )}
       </Card>
-
-      {/* EDIT */}
-      {editingUser && (
-        <UserUpdateDialog
-          user={editingUser}
-          onClose={() => setEditingUser(null)}
-          onUpdated={() => {
-            fetchUsers();
-            setEditingUser(null);
-          }}
-        />
-      )}
-
-      {/* DELETE */}
-      {deletingUser && (
-        <UserDeleteDialog
-          user={deletingUser}
-          onClose={() => setDeletingUser(null)}
-          onDeleted={() => {
-            fetchUsers();
-            setDeletingUser(null);
-          }}
-        />
-      )}
     </div>
   );
 }

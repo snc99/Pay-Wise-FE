@@ -10,30 +10,33 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { DebtCycle } from "@/lib/types/debt-cycle";
+import { PublicDebt } from "@/lib/types/debt-cycle";
 
 type EmptyStateType = "initial" | "search";
 
 type Props = {
-  data: DebtCycle[];
+  items: PublicDebt[];
+  loading: boolean;
   emptyState?: EmptyStateType;
 };
 
-const formatRupiah = (v: number | string) =>
+const formatRupiah = (v: number) =>
   new Intl.NumberFormat("id-ID", {
     style: "currency",
     currency: "IDR",
-  }).format(Number(v));
+    minimumFractionDigits: 0,
+  }).format(v);
 
-const formatDate = (v: string) =>
-  new Date(v).toLocaleDateString("id-ID", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
+function PublicTable({ items, loading, emptyState = "initial" }: Props) {
+  if (loading) {
+    return (
+      <div className="rounded-xl bg-white py-10 text-center text-gray-500">
+        Memuat data...
+      </div>
+    );
+  }
 
-function DebtTable({ data, emptyState = "initial" }: Props) {
-  if (data.length === 0) {
+  if (items.length === 0) {
     return (
       <div className="rounded-xl bg-white py-10">
         <div className="mx-6 rounded-xl border border-dashed border-gray-200 py-16">
@@ -75,44 +78,41 @@ function DebtTable({ data, emptyState = "initial" }: Props) {
         <TableHeader className="bg-muted/40">
           <TableRow>
             <TableHead>Nama</TableHead>
-            <TableHead>Jumlah Utang</TableHead>
-            <TableHead>Dibuat</TableHead>
+            <TableHead>Total Tagihan</TableHead>
+            <TableHead>Status</TableHead>
           </TableRow>
         </TableHeader>
 
         <TableBody>
-          {data.map((c) => (
-            <TableRow key={c.id} className="hover:bg-gray-50/50">
-              {/* NAMA USER */}
+          {items.map((item) => (
+            <TableRow key={item.id} className="hover:bg-gray-50/50">
               <TableCell>
                 <div className="flex items-center gap-3">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-linear-to-br from-blue-100 to-blue-200 text-sm font-medium text-blue-700">
-                    {c.user.name
-                      ? c.user.name
-                          .split(" ")
-                          .map((s) => s[0])
-                          .slice(0, 2)
-                          .join("")
-                      : "U"}
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-blue-100 to-blue-200 text-sm font-medium text-blue-700">
+                    {item.name
+                      ?.split(" ")
+                      .map((s) => s[0])
+                      .slice(0, 2)
+                      .join("")}
                   </div>
-                  <span className="font-medium text-gray-800">
-                    {c.user.name}
-                  </span>
+                  <span className="font-medium text-gray-800">{item.name}</span>
                 </div>
               </TableCell>
 
-              {/* JUMLAH UTANG */}
               <TableCell>
-                <div className="flex items-center gap-2">
-                  <span className="font-semibold text-red-600">
-                    {formatRupiah(c.total)}
-                  </span>
-                </div>
+                <span
+                  className={
+                    item.total > 0
+                      ? "font-semibold text-orange-600"
+                      : "font-semibold text-green-600"
+                  }
+                >
+                  {formatRupiah(item.total)}
+                </span>
               </TableCell>
 
-              {/* TANGGAL DIBUAT */}
               <TableCell>
-                <span className="text-gray-600">{formatDate(c.createdAt)}</span>
+                {item.status === "paid" ? "✅ Lunas" : "❌ Belum Lunas"}
               </TableCell>
             </TableRow>
           ))}
@@ -122,4 +122,4 @@ function DebtTable({ data, emptyState = "initial" }: Props) {
   );
 }
 
-export default memo(DebtTable);
+export default memo(PublicTable);

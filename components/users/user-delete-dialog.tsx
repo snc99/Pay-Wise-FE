@@ -5,19 +5,25 @@ import Image from "next/image";
 import { toast } from "sonner";
 import type { User } from "@/lib/types/user";
 import { deleteUser } from "@/lib/api/user";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { DialogTitle } from "@/components/ui/dialog";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { Loader2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 type Props = {
   user: User;
-  onClose: () => void;
-  onDeleted: () => void;
+  onDeleted?: () => void;
+  children: React.ReactNode;
 };
 
-export default function UserDeleteDialog({ user, onClose, onDeleted }: Props) {
+export default function UserDeleteDialog({ user, onDeleted, children }: Props) {
+  const [open, setOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
   const submitDelete = async () => {
@@ -25,23 +31,25 @@ export default function UserDeleteDialog({ user, onClose, onDeleted }: Props) {
     try {
       await deleteUser(user.id);
       toast.success(`${user.name} berhasil dihapus`);
-      onDeleted();
+      onDeleted?.();
+      setOpen(false);
     } catch (err: any) {
-      const msg = err?.response?.data?.message || "Gagal menghapus user";
-
-      onClose();
-      toast.error(msg);
+      const message = err?.response?.data?.message || "Gagal menghapus user";
+      toast.error(message);
     } finally {
       setIsDeleting(false);
     }
   };
 
   return (
-    <Dialog open onOpenChange={(v) => !v && onClose()}>
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>{children}</DialogTrigger>
+
       <DialogContent className="sm:max-w-[420px] rounded-2xl px-8 py-10 text-center">
         <VisuallyHidden>
           <DialogTitle>Konfirmasi Hapus User</DialogTitle>
         </VisuallyHidden>
+
         {/* IMAGE */}
         <div className="mx-auto mb-6 flex justify-center">
           <Image
@@ -55,13 +63,13 @@ export default function UserDeleteDialog({ user, onClose, onDeleted }: Props) {
 
         {/* TITLE */}
         <h1 className="text-xl font-bold text-gray-900">
-          Yakin ingin menghapus data ini?
+          Yakin ingin menghapus user ini?
         </h1>
 
         {/* DESC */}
-        <p className="text-sm text-gray-500">
-          Data <span className="font-medium text-gray-900">{user.name}</span>{" "}
-          akan dihapus selamanya.
+        <p className="mt-1 text-sm text-gray-500">
+          User <span className="font-medium text-gray-900">{user.name}</span>{" "}
+          akan dihapus secara permanen.
         </p>
 
         {/* ACTIONS */}
@@ -69,15 +77,13 @@ export default function UserDeleteDialog({ user, onClose, onDeleted }: Props) {
           <Button
             onClick={submitDelete}
             disabled={isDeleting}
-            className={`
-                bg-linear-to-r from-blue-500 to-cyan-600
-               hover:from-blue-600 hover:to-cyan-700
-                shadow-md hover:shadow-lg
-                transition-all duration-200
-                min-w-[120px]
-                rounded-full
-                ${isDeleting ? "opacity-80 cursor-not-allowed" : ""}
-                        `}
+            className={cn(
+              "bg-red-600 hover:bg-red-700 text-white",
+              "shadow-sm hover:shadow",
+              "min-w-[120px] rounded-lg",
+              "transition-all duration-200",
+              isDeleting && "opacity-80 cursor-not-allowed",
+            )}
           >
             {isDeleting ? (
               <Loader2 className="h-5 w-5 animate-spin text-white" />
@@ -88,9 +94,9 @@ export default function UserDeleteDialog({ user, onClose, onDeleted }: Props) {
 
           <Button
             variant="outline"
-            onClick={onClose}
+            onClick={() => setOpen(false)}
             disabled={isDeleting}
-            className="min-w-[120px] rounded-full text-blue-500 border-blue-400 hover:bg-blue-50"
+            className="min-w-[120px] rounded-lg border-gray-300 hover:bg-gray-50"
           >
             Batal
           </Button>

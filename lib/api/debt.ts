@@ -1,8 +1,14 @@
 import { api } from "./axios";
 
+import type { PublicDebt } from "@/lib/types/debt-cycle";
+import type {
+  DebtDetailResponse,
+  DebtListResponse,
+  OpenDebtCycle,
+} from "@/lib/types/debt-response";
+
 /**
  * GET /debt
- * list + search + pagination
  */
 export type GetDebtsParams = {
   search?: string;
@@ -10,7 +16,9 @@ export type GetDebtsParams = {
   limit?: number;
 };
 
-export async function getDebts(params: GetDebtsParams = {}) {
+export async function getDebts(
+  params: GetDebtsParams = {},
+): Promise<DebtListResponse> {
   const res = await api.get("/debt", {
     params: {
       search: params.search,
@@ -19,29 +27,71 @@ export async function getDebts(params: GetDebtsParams = {}) {
     },
   });
 
-  return res.data;
+  return {
+    items: res.data.data.items,
+    pagination: res.data.pagination,
+  };
 }
 
 /**
  * POST /debt
- * create new debt
  */
 export type CreateDebtPayload = {
   userId: string;
   amount: number;
-  date: string; // ISO string
+  note?: string;
+  date: string;
 };
 
-export async function createDebt(payload: CreateDebtPayload) {
+export type CreateDebtResponse = {
+  cycleId: string;
+  total: number;
+  debt: {
+    id: string;
+    amount: number;
+    date: string;
+  };
+};
+
+export async function createDebt(
+  payload: CreateDebtPayload,
+): Promise<CreateDebtResponse> {
   const res = await api.post("/debt", payload);
-  return res.data;
+  return res.data.data;
 }
 
 /**
- * DELETE /debt/:id
- * delete debt (only if all debts are paid)
+ * GET /debt/open
  */
-export async function deleteDebt(id: string) {
-  const res = await api.delete(`/debt/${id}`);
-  return res.data;
+export async function getOpenDebtCycles(
+  search?: string,
+  limit = 10,
+): Promise<OpenDebtCycle[]> {
+  const res = await api.get("/debt/open", {
+    params: { search, limit },
+  });
+
+  return res.data.data.items;
+}
+
+/**
+ * GET /debt/public
+ */
+export async function getPublicDebts(search?: string): Promise<PublicDebt[]> {
+  const res = await api.get("/debt/public", {
+    params: { search },
+  });
+
+  return res.data.data.items;
+}
+
+/**
+ * GET /debt/:cycleId
+ * ambil detail / history satu invoice
+ */
+export async function getDebtHistory(
+  cycleId: string,
+): Promise<DebtDetailResponse> {
+  const res = await api.get(`/debt/${cycleId}/items`);
+  return res.data.data;
 }

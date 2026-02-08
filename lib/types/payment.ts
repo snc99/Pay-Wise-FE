@@ -1,12 +1,38 @@
-// lib/types/payment.ts
-export type Payment = {
+export type PaymentListItem = {
   id: string;
-  debtId: string;
-  amount: string;
-  remaining: string;
+  user: {
+    id: string;
+    name: string;
+  };
+  total: number;
+  isPaid: boolean;
+  paidAt: string | null;
+  amountPaid: number;
+};
+
+export type Pagination = {
+  currentPage: number;
+  totalPages: number;
+  totalItems: number;
+};
+
+export type PaymentListResponse = {
+  items: PaymentListItem[];
+  pagination: Pagination;
+};
+
+export type CreatePaymentPayload = {
+  userId: string;
+  amount: number;
   paidAt: string;
-  createdAt: string;
-  updatedAt: string;
-  deletedAt?: string | null;
-  debt?: { id: string; amount: string } | null;
+};
+
+export type CreatePaymentResponse = {
+  cycleId: string;
+  total: number;
+  paidAt: string;
+  user: {
+    id: string;
+    name: string;
+  };
 };
