@@ -9,6 +9,7 @@ import DebtTable from "@/components/debt/debt-tabel";
 import DebtCreateDialog from "@/components/debt/debt-create-dialog";
 import { DebtCycle } from "@/lib/types/debt-cycle";
 import { TableSkeleton } from "@/components/shared/table-skeleton";
+import { useCallback } from "react";
 
 export default function DebtsPage() {
   const [currentPage, setCurrentPage] = useState(1);
@@ -17,28 +18,32 @@ export default function DebtsPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
-  // FETCH
-  const fetchDebts = async (opts?: { search?: string; page?: number }) => {
-    try {
-      setLoading(true);
-      const res = await getDebts({
-        search: opts?.search ?? searchQuery,
-        page: opts?.page ?? currentPage,
-        limit: 7,
-      });
 
-      setDebts(res?.items ?? []);
-      setCurrentPage(res.pagination?.currentPage ?? 1);
-      setTotalPages(res.pagination?.totalPages ?? 1);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // FETCH
+  const fetchDebts = useCallback(
+    async (opts?: { search?: string; page?: number }) => {
+      try {
+        setLoading(true);
+        const res = await getDebts({
+          search: opts?.search ?? searchQuery,
+          page: opts?.page ?? currentPage,
+          limit: 7,
+        });
+
+        setDebts(res?.items ?? []);
+        setCurrentPage(res.pagination?.currentPage ?? 1);
+        setTotalPages(res.pagination?.totalPages ?? 1);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [searchQuery, currentPage],
+  );
 
   // Initial load
   useEffect(() => {
     fetchDebts();
-  }, []);
+  }, [fetchDebts]);
 
   // Search
   useEffect(() => {
@@ -53,7 +58,7 @@ export default function DebtsPage() {
     }, 300);
 
     return () => clearTimeout(t);
-  }, [searchQuery]);
+  }, [searchQuery, fetchDebts]);
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
@@ -80,7 +85,7 @@ export default function DebtsPage() {
 
             {searchQuery && debts.length === 0 && !loading && (
               <p className="mt-2 text-sm text-gray-500">
-                Menampilkan 0 hasil untuk "{searchQuery}"
+                {`Menampilkan 0 hasil untuk "${searchQuery}"`}
               </p>
             )}
           </div>

@@ -9,6 +9,7 @@ import { getPayments } from "@/lib/api/payment";
 import PaymentCreateDialog from "@/components/payment/payment-create-dialog";
 import { PaymentListItem } from "@/lib/types/payment";
 import { TableSkeleton } from "@/components/shared/table-skeleton";
+import { useCallback } from "react";
 
 export default function PaymentsPage() {
   const [currentPage, setCurrentPage] = useState(1);
@@ -19,26 +20,29 @@ export default function PaymentsPage() {
   const [isSearching, setIsSearching] = useState(false);
 
   // FETCH
-  const fetchPayments = async (opts?: { search?: string; page?: number }) => {
-    try {
-      setLoading(true);
-      const res = await getPayments({
-        search: opts?.search ?? searchQuery,
-        page: opts?.page ?? currentPage,
-        limit: 7,
-      });
+  const fetchPayments = useCallback(
+    async (opts?: { search?: string; page?: number }) => {
+      try {
+        setLoading(true);
+        const res = await getPayments({
+          search: opts?.search ?? searchQuery,
+          page: opts?.page ?? currentPage,
+          limit: 7,
+        });
 
-      setPayments(res.items);
-      setCurrentPage(res.pagination?.currentPage ?? 1);
-      setTotalPages(res.pagination?.totalPages ?? 1);
-    } finally {
-      setLoading(false);
-    }
-  };
+        setPayments(res.items);
+        setCurrentPage(res.pagination?.currentPage ?? 1);
+        setTotalPages(res.pagination?.totalPages ?? 1);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [searchQuery, currentPage],
+  );
 
   useEffect(() => {
     fetchPayments();
-  }, []);
+  }, [fetchPayments]);
 
   useEffect(() => {
     const isActiveSearch = searchQuery.trim().length > 0;
@@ -52,7 +56,7 @@ export default function PaymentsPage() {
     }, 300);
 
     return () => clearTimeout(t);
-  }, [searchQuery]);
+  }, [searchQuery, fetchPayments]);
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
@@ -78,7 +82,7 @@ export default function PaymentsPage() {
 
             {searchQuery && payments.length === 0 && (
               <p className="mt-2 text-sm text-gray-500">
-                Menampilkan 0 hasil untuk "{searchQuery}"
+                {`Menampilkan 0 hasil untuk "${searchQuery}"`}
               </p>
             )}
           </div>

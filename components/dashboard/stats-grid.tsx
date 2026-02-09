@@ -6,11 +6,15 @@ import {
   ArrowUpRight,
   AlertCircle,
 } from "lucide-react";
-import { StatCard } from "./stat-card";
 import { Card, CardContent } from "../ui/card";
 
 interface Props {
-  stats: any;
+  stats: {
+    totalUsers: number;
+    totalDebt: number;
+    totalPaid: number;
+    pendingDebt: number;
+  };
 }
 
 export function StatsGrid({ stats }: Props) {

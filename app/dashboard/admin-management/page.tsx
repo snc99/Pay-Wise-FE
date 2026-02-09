@@ -11,6 +11,7 @@ import AdminCreateDialog from "@/components/admin/admin-create-dialog";
 import { useAuth } from "@/lib/auth/auth-context";
 import { useRouter } from "next/navigation";
 import { TableSkeleton } from "@/components/shared/table-skeleton";
+import { useCallback } from "react";
 
 export default function AdminManagementPage() {
   const { user, isLoading } = useAuth();
@@ -38,32 +39,35 @@ export default function AdminManagementPage() {
   }, [user, isLoading, router]);
 
   // FETCH (HANYA JIKA ROLE BENAR)
-  const fetchAdmins = async (opts?: { search?: string; page?: number }) => {
-    if (user?.role !== "SUPERADMIN") return;
+  const fetchAdmins = useCallback(
+    async (opts?: { search?: string; page?: number }) => {
+      if (user?.role !== "SUPERADMIN") return;
 
-    try {
-      setLoading(true);
+      try {
+        setLoading(true);
 
-      const res = await getAdmins({
-        search: opts?.search ?? searchQuery,
-        page: opts?.page ?? currentPage,
-        limit: 7,
-      });
+        const res = await getAdmins({
+          search: opts?.search ?? searchQuery,
+          page: opts?.page ?? currentPage,
+          limit: 7,
+        });
 
-      setAdmins(res?.data?.items ?? []);
-      setCurrentPage(res.pagination?.currentPage ?? 1);
-      setTotalPages(res.pagination?.totalPages ?? 1);
-    } finally {
-      setLoading(false);
-    }
-  };
+        setAdmins(res?.data?.items ?? []);
+        setCurrentPage(res.pagination?.currentPage ?? 1);
+        setTotalPages(res.pagination?.totalPages ?? 1);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [user?.role, searchQuery, currentPage],
+  );
 
   // INITIAL FETCH (SETELAH AUTH SIAP)
   useEffect(() => {
     if (!isLoading && user?.role === "SUPERADMIN") {
       fetchAdmins();
     }
-  }, [user, isLoading]);
+  }, [fetchAdmins, isLoading, user?.role]);
 
   // SEARCH DEBOUNCE
   useEffect(() => {
@@ -80,7 +84,7 @@ export default function AdminManagementPage() {
     }, 300);
 
     return () => clearTimeout(t);
-  }, [searchQuery]);
+  }, [searchQuery, fetchAdmins, user?.role]);
 
   // 🚫 BLOCK RENDER
   if (isLoading || !user || user.role !== "SUPERADMIN") {
@@ -110,7 +114,7 @@ export default function AdminManagementPage() {
             </div>
             {searchQuery && admins.length === 0 && (
               <p className="mt-2 text-sm text-gray-500">
-                Menampilkan 0 hasil untuk "{searchQuery}"
+                {`Menampilkan 0 hasil untuk "${searchQuery}"`}
               </p>
             )}
           </div>

@@ -12,17 +12,10 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@radix-ui/react-label";
 import { toast } from "sonner";
-import {
-  Loader2,
-  CalendarIcon,
-  Search,
-  ArrowDown,
-  ArrowDownToLine,
-} from "lucide-react";
+import { Loader2, CalendarIcon, Search, ArrowDownToLine } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { getUsers } from "@/lib/api/user";
 import { createDebt } from "@/lib/api/debt";
-import type { User } from "@/lib/types/user";
+import type { StylesConfig } from "react-select";
 import AsyncSelect from "react-select/async";
 import { searchUsers } from "@/lib/api/user";
 import { FiDollarSign, FiUser, FiCalendar, FiFileText } from "react-icons/fi";
@@ -44,38 +37,21 @@ type UserOption = {
   phone?: string;
 };
 
-const customStyles = (hasError: boolean) => ({
-  control: (base: any, state: any) => ({
+const customStyles: StylesConfig<UserOption, false> = {
+  control: (base, state) => ({
     ...base,
     minHeight: "44px",
-    borderColor: hasError ? "#ef4444" : state.isFocused ? "#3b82f6" : "#d1d5db",
+    borderColor: state.isFocused ? "#3b82f6" : "#d1d5db",
     borderRadius: "0.5rem",
-    boxShadow: state.isFocused
-      ? hasError
-        ? "0 0 0 3px rgba(239, 68, 68, 0.1)"
-        : "0 0 0 3px rgba(59, 130, 246, 0.1)"
-      : "none",
+    boxShadow: state.isFocused ? "0 0 0 3px rgba(59, 130, 246, 0.1)" : "none",
     "&:hover": {
-      borderColor: hasError ? "#ef4444" : "#3b82f6",
+      borderColor: "#3b82f6",
     },
     transition: "all 0.2s",
     backgroundColor: "#fafafa",
   }),
-  menu: (base: any) => ({
-    ...base,
-    borderRadius: "0.75rem",
-    boxShadow:
-      "0 10px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)",
-    marginTop: "8px",
-    border: "1px solid #e5e7eb",
-    zIndex: 9999,
-  }),
-  menuList: (base: any) => ({
-    ...base,
-    padding: "8px",
-    maxHeight: "220px",
-  }),
-  option: (base: any, state: any) => ({
+
+  option: (base, state) => ({
     ...base,
     backgroundColor: state.isSelected
       ? "#3b82f6"
@@ -93,49 +69,7 @@ const customStyles = (hasError: boolean) => ({
     marginBottom: "4px",
     transition: "all 0.2s",
   }),
-  placeholder: (base: any) => ({
-    ...base,
-    color: "#94a3b8",
-    fontSize: "0.95rem",
-    fontWeight: 400,
-  }),
-  singleValue: (base: any) => ({
-    ...base,
-    color: "#1f2937",
-    fontSize: "0.95rem",
-    fontWeight: 500,
-  }),
-  input: (base: any) => ({
-    ...base,
-    color: "#1f2937",
-    fontSize: "0.95rem",
-    margin: 0,
-    padding: 0,
-  }),
-  dropdownIndicator: (base: any) => ({
-    ...base,
-    color: "#94a3b8",
-    padding: "0 12px",
-    "&:hover": {
-      color: "#64748b",
-    },
-  }),
-  clearIndicator: (base: any) => ({
-    ...base,
-    color: "#94a3b8",
-    "&:hover": {
-      color: "#64748b",
-    },
-  }),
-  indicatorSeparator: (base: any) => ({
-    ...base,
-    backgroundColor: "#e2e8f0",
-  }),
-  loadingIndicator: (base: any) => ({
-    ...base,
-    color: "#3b82f6",
-  }),
-});
+};
 
 export default function DebtCreateDialog({ onCreated }: Props) {
   const [open, setOpen] = useState(false);
@@ -176,7 +110,7 @@ export default function DebtCreateDialog({ onCreated }: Props) {
       const res = await searchUsers(inputValue, 10);
 
       // HANDLE API RESPONSE CORRECTLY
-      let users: any[] = [];
+      let users: unknown[] = [];
 
       if (res?.success === true && res?.data?.items) {
         users = res.data.items;
@@ -190,10 +124,11 @@ export default function DebtCreateDialog({ onCreated }: Props) {
 
       // FORMAT FOR REACT-SELECT
       return users
-        .map((user: any) => {
-          // API returns { value: "...", label: "..." } NOT { id: "...", name: "..." }
-          const userValue = user.value || user.id || "";
-          const userLabel = user.label || user.name || "";
+        .map((user) => {
+          const u = user as any;
+
+          const userValue = u.value || u.id || "";
+          const userLabel = u.label || u.name || "";
 
           if (!userValue || !userLabel) {
             return null;
@@ -202,7 +137,7 @@ export default function DebtCreateDialog({ onCreated }: Props) {
           return {
             value: userValue,
             label: userLabel,
-            phone: user.phone || "",
+            phone: u.phone || "",
           };
         })
         .filter(Boolean) as UserOption[];
@@ -271,14 +206,18 @@ export default function DebtCreateDialog({ onCreated }: Props) {
       toast.success(`Utang berhasil ditambahkan untuk ${selectedUser?.label}`);
       onCreated?.();
       setOpen(false);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("❌ Create debt error:", err);
-      const apiErrors = err?.response?.data?.errors;
+
+      const e = err as any;
+      const apiErrors = e?.response?.data?.errors;
+
       if (apiErrors) {
         setFormErrors(apiErrors);
         return;
       }
-      toast.error(err?.response?.data?.message || "Gagal menambahkan utang");
+
+      toast.error(e?.response?.data?.message || "Gagal menambahkan utang");
     } finally {
       setIsSubmitting(false);
     }
@@ -351,7 +290,7 @@ export default function DebtCreateDialog({ onCreated }: Props) {
                     setFormErrors((prev) => ({ ...prev, userId: undefined }));
                   }
                 }}
-                styles={customStyles(!!formErrors.userId)}
+                styles={customStyles}
                 formatOptionLabel={formatOptionLabel}
                 placeholder="Ketik nama user..."
                 noOptionsMessage={({ inputValue }) =>

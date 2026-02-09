@@ -55,8 +55,8 @@ export default function LoginPage() {
 
     try {
       await login(trimmedUsername, password);
-    } catch (err: any) {
-      const response = err?.response?.data;
+    } catch (err: unknown) {
+      const response = (err as any)?.response?.data;
 
       if (response?.errors) {
         const firstError =
@@ -73,10 +73,14 @@ export default function LoginPage() {
         return;
       }
 
-      if (err.message?.includes("401") || err.message?.includes("salah")) {
-        setError("Username atau password salah");
-      } else if (err.message?.includes("network")) {
-        setError("Tidak dapat terhubung ke server");
+      if (err instanceof Error) {
+        if (err.message.includes("401") || err.message.includes("salah")) {
+          setError("Username atau password salah");
+        } else if (err.message.toLowerCase().includes("network")) {
+          setError("Tidak dapat terhubung ke server");
+        } else {
+          setError("Terjadi kesalahan. Silakan coba lagi.");
+        }
       } else {
         setError("Terjadi kesalahan. Silakan coba lagi.");
       }

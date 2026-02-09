@@ -8,10 +8,9 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Loader2, History, Calendar, FileText, User, Eye } from "lucide-react";
+import { Loader2, History, Calendar, FileText, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import type { DebtCycle } from "@/lib/types/debt-cycle";
 import { getDebtHistory } from "@/lib/api/debt";
 
 type HistoryTarget = {

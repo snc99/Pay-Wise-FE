@@ -121,7 +121,7 @@ export default function AdminUpdateDialog({
     setIsSubmitting(true);
     try {
       // Buat payload update, jika password kosong jangan kirim
-      const updateData: any = {
+      const updateData: Record<string, unknown> = {
         name: form.name,
         username: form.username,
         email: form.email,
@@ -140,21 +140,26 @@ export default function AdminUpdateDialog({
 
       onUpdated?.(updated);
       setOpen(false);
-    } catch (err: any) {
-      const apiErrors = err?.response?.data?.errors;
+    } catch (err: unknown) {
+      const e = err as any;
+      const apiErrors = e?.response?.data?.errors;
 
       if (apiErrors && typeof apiErrors === "object") {
         const fieldErrors: Record<string, string> = {};
-        Object.entries(apiErrors).forEach(([field, messages]: any) => {
-          if (Array.isArray(messages) && messages.length > 0) {
-            fieldErrors[field.toLowerCase()] = messages[0];
-          }
-        });
+        Object.entries(apiErrors).forEach(
+          ([field, messages]: [string, unknown]) => {
+            if (Array.isArray(messages) && messages.length > 0) {
+              fieldErrors[field.toLowerCase()] = String(messages[0]);
+            }
+          },
+        );
         setFormErrors(fieldErrors);
         return;
       }
 
-      toast.error(err?.response?.data?.message || "Gagal memperbarui admin");
+      const message = e?.response?.data?.message ?? "Gagal memperbarui admin";
+
+      toast.error(message);
     } finally {
       setIsSubmitting(false);
     }
@@ -172,7 +177,7 @@ export default function AdminUpdateDialog({
 
       <DialogContent className="sm:max-w-[520px] max-w-[95vw] rounded-xl p-0 overflow-hidden border shadow-lg">
         {/* Header dengan subtle gradient */}
-        <div className="bg-gradient-to-r from-blue-50 to-gray-50 px-6 pt-6 pb-4 border-b">
+        <div className="bg-linear-to-r from-blue-50 to-gray-50 px-6 pt-6 pb-4 border-b">
           <DialogHeader>
             <div className="flex items-center gap-3 mb-2">
               <div className="p-2 bg-blue-100 rounded-lg">

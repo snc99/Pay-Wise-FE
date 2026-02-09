@@ -25,7 +25,7 @@ export default function DebtPage() {
    * jangan tergantung state luar
    */
   const fetchDebts = useCallback(
-    async ({ search = "", page = 1 }: { search?: string; page?: number }) => {
+    async ({ search = "" }: { search?: string }) => {
       try {
         setLoading(true);
 
@@ -47,7 +47,7 @@ export default function DebtPage() {
    * INITIAL LOAD
    */
   useEffect(() => {
-    fetchDebts({ search: "", page: 1 });
+    fetchDebts({ search: "" });
   }, [fetchDebts]);
 
   /**
@@ -62,7 +62,7 @@ export default function DebtPage() {
 
     const t = setTimeout(() => {
       setCurrentPage(1);
-      fetchDebts({ search: searchQuery, page: 1 });
+      fetchDebts({ search: searchQuery });
     }, 300);
 
     return () => clearTimeout(t);
@@ -112,7 +112,7 @@ export default function DebtPage() {
               totalPages={totalPages}
               onPageChange={(page) => {
                 setCurrentPage(page);
-                fetchDebts({ search: searchQuery, page });
+                fetchDebts({ search: searchQuery });
               }}
             />
           </div>

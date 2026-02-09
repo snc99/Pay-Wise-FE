@@ -37,8 +37,9 @@ export default function AdminDeleteDialog({
       toast.success(`${admin.name} berhasil dihapus`);
       onDeleted?.();
       setOpen(false);
-    } catch (err: any) {
-      const message = err?.response?.data?.message || "Gagal menghapus admin";
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : "Gagal menghapus admin";
       toast.error(message);
     } finally {
       setIsDeleting(false);

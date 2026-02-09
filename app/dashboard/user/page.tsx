@@ -9,6 +9,8 @@ import { Card, CardHeader } from "@/components/ui/card";
 import { SearchInput } from "@/components/shared/search-input";
 import { Pagination } from "@/components/shared/pagination";
 import { TableSkeleton } from "@/components/shared/table-skeleton";
+import { useCallback } from "react";
+import { features } from "process";
 
 export default function UsersPage() {
   const [currentPage, setCurrentPage] = useState(1);
@@ -19,26 +21,29 @@ export default function UsersPage() {
   const [isSearching, setIsSearching] = useState(false);
 
   // FETCH
-  const fetchUsers = async (opts?: { search?: string; page?: number }) => {
-    try {
-      setLoading(true);
-      const res = await getUsers({
-        search: opts?.search ?? searchQuery,
-        page: opts?.page ?? currentPage,
-        limit: 7,
-      });
+  const fetchUsers = useCallback(
+    async (opts?: { search?: string; page?: number }) => {
+      try {
+        setLoading(true);
+        const res = await getUsers({
+          search: opts?.search ?? searchQuery,
+          page: opts?.page ?? currentPage,
+          limit: 7,
+        });
 
-      setUsers(res?.data?.items ?? []);
-      setCurrentPage(res.pagination?.currentPage ?? 1);
-      setTotalPages(res.pagination?.totalPages ?? 1);
-    } finally {
-      setLoading(false);
-    }
-  };
+        setUsers(res?.data?.items ?? []);
+        setCurrentPage(res.pagination?.currentPage ?? 1);
+        setTotalPages(res.pagination?.totalPages ?? 1);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [searchQuery, currentPage],
+  );
 
   useEffect(() => {
     fetchUsers();
-  }, []);
+  }, [features]);
 
   useEffect(() => {
     const isActiveSearch = searchQuery.trim().length > 0;
@@ -52,7 +57,7 @@ export default function UsersPage() {
     }, 300);
 
     return () => clearTimeout(t);
-  }, [searchQuery]);
+  }, [searchQuery, fetchUsers]);
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
@@ -77,7 +82,7 @@ export default function UsersPage() {
             </div>
             {searchQuery && users.length === 0 && (
               <p className="mt-2 text-sm text-gray-500">
-                Menampilkan 0 hasil untuk "{searchQuery}"
+                {`Menampilkan 0 hasil untuk "${searchQuery}"`}
               </p>
             )}
           </div>
