@@ -3,12 +3,8 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import {
-  MdOutlineLogin,
-  MdOutlineNotifications,
-  MdPersonOutline,
-} from "react-icons/md";
-import { FiMenu, FiX, FiChevronDown } from "react-icons/fi";
+import { MdOutlineLogin, MdPersonOutline } from "react-icons/md";
+import { FiMenu, FiX } from "react-icons/fi";
 import {
   motion,
   AnimatePresence,

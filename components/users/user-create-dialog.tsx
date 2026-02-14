@@ -16,6 +16,8 @@ import { createUser } from "@/lib/api/user";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Download, Loader2 } from "lucide-react";
+import { getFieldErrors } from "@/lib/utils/get-field-errors";
+import { getErrorMessage } from "@/lib/utils/get-error-message";
 
 type Props = {
   onCreated?: (user: User) => void;
@@ -89,21 +91,15 @@ export default function UserCreateDialog({ onCreated }: Props) {
       onCreated?.(created);
       resetForm();
       setOpen(false);
-    } catch (err: any) {
-      const apiErrors = err?.response?.data?.errors;
+    } catch (err: unknown) {
+      const fieldErrors = getFieldErrors(err);
 
-      if (apiErrors && typeof apiErrors === "object") {
-        const fieldErrors: Record<string, string> = {};
-        Object.entries(apiErrors).forEach(([field, messages]: any) => {
-          if (Array.isArray(messages) && messages.length > 0) {
-            fieldErrors[field.toLowerCase()] = messages[0];
-          }
-        });
+      if (fieldErrors) {
         setFormErrors(fieldErrors);
         return;
       }
 
-      toast.error(err?.response?.data?.message || "Gagal menambahkan user");
+      toast.error(getErrorMessage(err));
     } finally {
       setIsSubmitting(false);
     }
@@ -129,7 +125,7 @@ export default function UserCreateDialog({ onCreated }: Props) {
 
       <DialogContent className="sm:max-w-[520px] max-w-[95vw] rounded-xl p-0 overflow-hidden border shadow-lg">
         {/* Header dengan subtle gradient - Warna hijau untuk user */}
-        <div className="bg-gradient-to-r from-blue-50 to-gray-50 px-6 pt-6 pb-4 border-b">
+        <div className="bg-linear-to-r from-blue-50 to-gray-50 px-6 pt-6 pb-4 border-b">
           <DialogHeader>
             <div className="flex items-center gap-3 mb-2">
               <div className="p-2 bg-blue-100 rounded-lg">

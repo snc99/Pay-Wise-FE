@@ -13,11 +13,27 @@ export const api = axios.create({
   },
 });
 
-function normalizeError(err: any) {
-  if (err.response?.data) return err.response.data;
+function normalizeError(err: unknown) {
+  if (
+    typeof err === "object" &&
+    err !== null &&
+    "response" in err &&
+    typeof (err as { response?: unknown }).response === "object"
+  ) {
+    const data = (err as { response?: { data?: unknown } }).response?.data;
+    if (data) return data;
+  }
+
+  if (err instanceof Error) {
+    return {
+      success: false,
+      message: err.message,
+    };
+  }
+
   return {
     success: false,
-    message: err.message ?? "Terjadi kesalahan",
+    message: "Terjadi kesalahan",
   };
 }
 
@@ -25,7 +41,7 @@ export async function apiFetch(
   endpoint: string,
   options?: {
     method?: "GET" | "POST" | "PUT" | "DELETE";
-    body?: any;
+    body?: unknown;
   },
 ) {
   try {
@@ -35,7 +51,7 @@ export async function apiFetch(
       data: options?.body,
     });
     return res.data;
-  } catch (err: any) {
+  } catch (err: unknown) {
     throw normalizeError(err);
   }
 }

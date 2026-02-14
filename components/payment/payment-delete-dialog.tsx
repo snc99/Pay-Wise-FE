@@ -14,8 +14,8 @@ import { Button } from "@/components/ui/button";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { DebtCycle } from "@/lib/types/debt-cycle";
 import { deletePaymentCycle } from "@/lib/api";
+import { getErrorMessage } from "@/lib/utils/get-error-message";
 
 type DeleteTarget = {
   id: string;
@@ -46,9 +46,8 @@ export default function PaymentDeleteDialog({
       toast.success(`Tagihan ${payment.user.name} berhasil dihapus`);
       onDeleted?.();
       setOpen(false);
-    } catch (err: any) {
-      const message = err?.response?.data?.message || "Gagal menghapus tagihan";
-      toast.error(message);
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err));
     } finally {
       setIsDeleting(false);
     }

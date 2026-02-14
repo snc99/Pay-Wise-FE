@@ -17,14 +17,12 @@ import {
   CalendarIcon,
   Search,
   CheckCircle,
-  ArrowDown,
   ArrowDownToLine,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createPayment } from "@/lib/api/payment";
 import { getOpenDebtCycles } from "@/lib/api/debt";
 import AsyncSelect from "react-select/async";
-import { FiDollarSign, FiUser, FiCalendar } from "react-icons/fi";
 import { format } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -32,6 +30,9 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { getErrorMessage } from "@/lib/utils/get-error-message";
+import { getFieldErrors } from "@/lib/utils/get-field-errors";
+import type { StylesConfig } from "react-select";
 
 type Props = {
   onCreated?: () => void;
@@ -45,8 +46,8 @@ type DebtCycleOption = {
   userId: string;
 };
 
-const customStyles = (hasError: boolean) => ({
-  control: (base: any, state: any) => ({
+const customStyles = (hasError: boolean): StylesConfig<DebtCycleOption> => ({
+  control: (base, state) => ({
     ...base,
     minHeight: "44px",
     borderColor: hasError ? "#ef4444" : state.isFocused ? "#3b82f6" : "#d1d5db",
@@ -62,7 +63,7 @@ const customStyles = (hasError: boolean) => ({
     transition: "all 0.2s",
     backgroundColor: "#fafafa",
   }),
-  menu: (base: any) => ({
+  menu: (base) => ({
     ...base,
     borderRadius: "0.75rem",
     boxShadow:
@@ -71,12 +72,12 @@ const customStyles = (hasError: boolean) => ({
     border: "1px solid #e5e7eb",
     zIndex: 9999,
   }),
-  menuList: (base: any) => ({
+  menuList: (base) => ({
     ...base,
     padding: "8px",
     maxHeight: "220px",
   }),
-  option: (base: any, state: any) => ({
+  option: (base, state) => ({
     ...base,
     backgroundColor: state.isSelected
       ? "#3b82f6"
@@ -94,26 +95,26 @@ const customStyles = (hasError: boolean) => ({
     marginBottom: "4px",
     transition: "all 0.2s",
   }),
-  placeholder: (base: any) => ({
+  placeholder: (base) => ({
     ...base,
     color: "#94a3b8",
     fontSize: "0.95rem",
     fontWeight: 400,
   }),
-  singleValue: (base: any) => ({
+  singleValue: (base) => ({
     ...base,
     color: "#1f2937",
     fontSize: "0.95rem",
     fontWeight: 500,
   }),
-  input: (base: any) => ({
+  input: (base) => ({
     ...base,
     color: "#1f2937",
     fontSize: "0.95rem",
     margin: 0,
     padding: 0,
   }),
-  dropdownIndicator: (base: any) => ({
+  dropdownIndicator: (base) => ({
     ...base,
     color: "#94a3b8",
     padding: "0 12px",
@@ -121,18 +122,18 @@ const customStyles = (hasError: boolean) => ({
       color: "#64748b",
     },
   }),
-  clearIndicator: (base: any) => ({
+  clearIndicator: (base) => ({
     ...base,
     color: "#94a3b8",
     "&:hover": {
       color: "#64748b",
     },
   }),
-  indicatorSeparator: (base: any) => ({
+  indicatorSeparator: (base) => ({
     ...base,
     backgroundColor: "#e2e8f0",
   }),
-  loadingIndicator: (base: any) => ({
+  loadingIndicator: (base) => ({
     ...base,
     color: "#3b82f6",
   }),
@@ -296,14 +297,15 @@ export default function PaymentCreateDialog({ onCreated }: Props) {
 
       onCreated?.();
       setOpen(false);
-    } catch (err: any) {
-      console.error("Create payment error:", err);
-      const apiErrors = err?.response?.data?.errors;
-      if (apiErrors) {
-        setFormErrors(apiErrors);
+    } catch (err: unknown) {
+      const fieldErrors = getFieldErrors(err);
+
+      if (fieldErrors) {
+        setFormErrors(fieldErrors);
         return;
       }
-      toast.error(err?.response?.data?.message || "Gagal mencatat pembayaran");
+
+      toast.error(getErrorMessage(err));
     } finally {
       setIsSubmitting(false);
     }

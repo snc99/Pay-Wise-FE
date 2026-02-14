@@ -24,6 +24,8 @@ import { updateAdmin } from "@/lib/api/admin"; // Pastikan ada fungsi updateAdmi
 import type { Admin, Role } from "@/lib/types/admin";
 import { cn } from "@/lib/utils";
 import { Download, Loader2 } from "lucide-react";
+import { getErrorMessage } from "@/lib/utils/get-error-message";
+import { getFieldErrors } from "@/lib/utils/get-field-errors";
 
 type Props = {
   admin: Admin;
@@ -141,25 +143,14 @@ export default function AdminUpdateDialog({
       onUpdated?.(updated);
       setOpen(false);
     } catch (err: unknown) {
-      const e = err as any;
-      const apiErrors = e?.response?.data?.errors;
+      const fieldErrors = getFieldErrors(err);
 
-      if (apiErrors && typeof apiErrors === "object") {
-        const fieldErrors: Record<string, string> = {};
-        Object.entries(apiErrors).forEach(
-          ([field, messages]: [string, unknown]) => {
-            if (Array.isArray(messages) && messages.length > 0) {
-              fieldErrors[field.toLowerCase()] = String(messages[0]);
-            }
-          },
-        );
+      if (fieldErrors) {
         setFormErrors(fieldErrors);
         return;
       }
 
-      const message = e?.response?.data?.message ?? "Gagal memperbarui admin";
-
-      toast.error(message);
+      toast.error(getErrorMessage(err));
     } finally {
       setIsSubmitting(false);
     }

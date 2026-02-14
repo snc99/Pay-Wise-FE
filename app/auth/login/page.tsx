@@ -6,6 +6,7 @@ import { Eye, EyeOff, Loader2, User } from "lucide-react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth/auth-context";
+import { getErrorMessage } from "@/lib/utils/get-error-message";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -56,34 +57,7 @@ export default function LoginPage() {
     try {
       await login(trimmedUsername, password);
     } catch (err: unknown) {
-      const response = (err as any)?.response?.data;
-
-      if (response?.errors) {
-        const firstError =
-          response.errors.username?.[0] || response.errors.password?.[0];
-
-        if (firstError) {
-          setError(firstError);
-          return;
-        }
-      }
-
-      if (response?.message) {
-        setError(response.message);
-        return;
-      }
-
-      if (err instanceof Error) {
-        if (err.message.includes("401") || err.message.includes("salah")) {
-          setError("Username atau password salah");
-        } else if (err.message.toLowerCase().includes("network")) {
-          setError("Tidak dapat terhubung ke server");
-        } else {
-          setError("Terjadi kesalahan. Silakan coba lagi.");
-        }
-      } else {
-        setError("Terjadi kesalahan. Silakan coba lagi.");
-      }
+      setError(getErrorMessage(err));
     }
   };
 

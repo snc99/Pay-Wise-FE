@@ -18,7 +18,7 @@ import { createDebt } from "@/lib/api/debt";
 import type { StylesConfig } from "react-select";
 import AsyncSelect from "react-select/async";
 import { searchUsers } from "@/lib/api/user";
-import { FiDollarSign, FiUser, FiCalendar, FiFileText } from "react-icons/fi";
+import { FiDollarSign, FiFileText } from "react-icons/fi";
 import { format } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -26,6 +26,8 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { getFieldErrors } from "@/lib/utils/get-field-errors";
+import { getErrorMessage } from "@/lib/utils/get-error-message";
 
 type Props = {
   onCreated?: () => void;
@@ -36,6 +38,10 @@ type UserOption = {
   label: string;
   phone?: string;
 };
+
+type RawUser =
+  | { value?: string; label?: string; phone?: string }
+  | { id?: string; name?: string; phone?: string };
 
 const customStyles: StylesConfig<UserOption, false> = {
   control: (base, state) => ({
@@ -125,10 +131,16 @@ export default function DebtCreateDialog({ onCreated }: Props) {
       // FORMAT FOR REACT-SELECT
       return users
         .map((user) => {
-          const u = user as any;
+          const u = user as {
+            value?: string;
+            label?: string;
+            id?: string;
+            name?: string;
+            phone?: string;
+          };
 
-          const userValue = u.value || u.id || "";
-          const userLabel = u.label || u.name || "";
+          const userValue = u.value ?? u.id ?? "";
+          const userLabel = u.label ?? u.name ?? "";
 
           if (!userValue || !userLabel) {
             return null;
@@ -137,10 +149,13 @@ export default function DebtCreateDialog({ onCreated }: Props) {
           return {
             value: userValue,
             label: userLabel,
-            phone: u.phone || "",
+            phone: u.phone ?? "",
           };
         })
-        .filter(Boolean) as UserOption[];
+        .filter(
+          (item): item is { value: string; label: string; phone: string } =>
+            item !== null,
+        );
     } catch (error) {
       console.error("❌ Error loading user options:", error);
       toast.error("Gagal memuat data user");
@@ -207,17 +222,16 @@ export default function DebtCreateDialog({ onCreated }: Props) {
       onCreated?.();
       setOpen(false);
     } catch (err: unknown) {
-      console.error("❌ Create debt error:", err);
+      console.error("Create debt error:", err);
 
-      const e = err as any;
-      const apiErrors = e?.response?.data?.errors;
+      const fieldErrors = getFieldErrors(err);
 
-      if (apiErrors) {
-        setFormErrors(apiErrors);
+      if (fieldErrors) {
+        setFormErrors(fieldErrors);
         return;
       }
 
-      toast.error(e?.response?.data?.message || "Gagal menambahkan utang");
+      toast.error(getErrorMessage(err));
     } finally {
       setIsSubmitting(false);
     }

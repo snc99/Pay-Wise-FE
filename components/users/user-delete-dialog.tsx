@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { getErrorMessage } from "@/lib/utils/get-error-message";
 
 type Props = {
   user: User;
@@ -33,9 +34,8 @@ export default function UserDeleteDialog({ user, onDeleted, children }: Props) {
       toast.success(`${user.name} berhasil dihapus`);
       onDeleted?.();
       setOpen(false);
-    } catch (err: any) {
-      const message = err?.response?.data?.message || "Gagal menghapus user";
-      toast.error(message);
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err));
     } finally {
       setIsDeleting(false);
     }

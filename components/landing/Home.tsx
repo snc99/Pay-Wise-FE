@@ -3,7 +3,6 @@
 import React from "react";
 import Image from "next/image";
 import { motion, Variants } from "framer-motion";
-import { FiUsers, FiFileText, FiCreditCard } from "react-icons/fi";
 
 export default function Home() {
   const containerVariants: Variants = {

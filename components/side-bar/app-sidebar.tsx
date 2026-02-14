@@ -4,8 +4,6 @@ import * as React from "react";
 import {
   BookOpen,
   CreditCard,
-  Ellipsis,
-  RefreshCw,
   Settings2,
   SquareTerminal,
   User,
@@ -22,13 +20,14 @@ import {
 } from "@/components/ui/sidebar";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
+import { AuthUser } from "@/lib/types/auth";
 
 export function AppSidebar({
   user,
   isSuperAdmin = false,
   ...props
 }: React.ComponentProps<typeof Sidebar> & {
-  user?: any | null;
+  user?: AuthUser | null;
   isSuperAdmin?: boolean;
 }) {
   const pathname = usePathname();

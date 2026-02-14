@@ -13,14 +13,12 @@ import {
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, Eye, Trash2, Receipt } from "lucide-react";
+import { MoreHorizontal, Eye, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { DebtCycle } from "@/lib/types/debt-cycle";
 import { cn } from "@/lib/utils";
 import DebtHistoryModal from "../debt/debt-history-modal";
 import PaymentDeleteDialog from "./payment-delete-dialog";

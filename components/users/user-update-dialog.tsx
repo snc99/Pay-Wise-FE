@@ -16,6 +16,8 @@ import type { User } from "@/lib/types/user";
 import { updateUser } from "@/lib/api/user";
 import { cn } from "@/lib/utils";
 import { Download, Loader2 } from "lucide-react";
+import { getFieldErrors } from "@/lib/utils/get-field-errors";
+import { getErrorMessage } from "@/lib/utils/get-error-message";
 
 type Props = {
   user: User;
@@ -110,21 +112,15 @@ export default function UserUpdateDialog({ user, onUpdated, children }: Props) {
 
       onUpdated?.(updated);
       setOpen(false);
-    } catch (err: any) {
-      const apiErrors = err?.response?.data?.errors;
+    } catch (err: unknown) {
+      const fieldErrors = getFieldErrors(err);
 
-      if (apiErrors && typeof apiErrors === "object") {
-        const fieldErrors: Record<string, string> = {};
-        Object.entries(apiErrors).forEach(([field, messages]: any) => {
-          if (Array.isArray(messages) && messages.length > 0) {
-            fieldErrors[field.toLowerCase()] = messages[0];
-          }
-        });
+      if (fieldErrors) {
         setFormErrors(fieldErrors);
         return;
       }
 
-      toast.error(err?.response?.data?.message || "Gagal memperbarui user");
+      toast.error(getErrorMessage(err));
     } finally {
       setIsSubmitting(false);
     }
@@ -142,7 +138,7 @@ export default function UserUpdateDialog({ user, onUpdated, children }: Props) {
 
       <DialogContent className="sm:max-w-[520px] max-w-[95vw] rounded-xl p-0 overflow-hidden border shadow-lg">
         {/* Header dengan subtle gradient - Warna biru untuk consistency */}
-        <div className="bg-gradient-to-r from-blue-50 to-gray-50 px-6 pt-6 pb-4 border-b">
+        <div className="bg-linear-to-r from-blue-50 to-gray-50 px-6 pt-6 pb-4 border-b">
           <DialogHeader>
             <div className="flex items-center gap-3 mb-2">
               <div className="p-2 bg-blue-100 rounded-lg">
