@@ -21,9 +21,10 @@ import {
 } from "react-icons/fi";
 import { toast } from "sonner";
 import { createAdmin } from "@/lib/api/admin";
-import type { Admin, Role } from "@/lib/types/admin";
+import type { Admin } from "@/lib/types/admin";
 import { cn } from "@/lib/utils";
 import { Download, Loader2 } from "lucide-react";
+import { Role } from "@/lib/types/role";
 
 type Props = {
   onCreated?: (admin: Admin) => void;

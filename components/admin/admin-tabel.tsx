@@ -119,7 +119,7 @@ function AdminTable({ data, emptyState = "initial", onRefresh }: Props) {
               {/* NAMA */}
               <TableCell>
                 <div className="flex items-center gap-3">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-blue-100 to-blue-200 text-sm font-medium text-blue-700">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-linear-to-br from-blue-100 to-blue-200 text-sm font-medium text-blue-700">
                     {admin.name
                       ? admin.name
                           .split(" ")
@@ -156,8 +156,8 @@ function AdminTable({ data, emptyState = "initial", onRefresh }: Props) {
                   className={`inline-flex items-center rounded-sm px-3 py-1 text-xs font-medium
                  ${
                    admin.role === "SUPERADMIN"
-                     ? "bg-gradient-to-r from-red-50 to-pink-50 border border-red-200 text-red-700"
-                     : "bg-gradient-to-r from-blue-50 to-cyan-50 border border-blue-200 text-blue-700"
+                     ? "bg-linear-to-r from-red-50 to-pink-50 border border-red-200 text-red-700"
+                     : "bg-linear-to-r from-blue-50 to-cyan-50 border border-blue-200 text-blue-700"
                  }`}
                 >
                   {admin.role === "SUPERADMIN" ? "Super Admin" : "Admin"}
@@ -217,7 +217,7 @@ function AdminTable({ data, emptyState = "initial", onRefresh }: Props) {
                     {/* Edit via Modal */}
                     <div className="relative">
                       <AdminUpdateDialog admin={admin} onUpdated={onRefresh}>
-                        <div className="relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-blue-50 hover:text-blue-700 data-[disabled]:pointer-events-none data-[disabled]:opacity-50 gap-2">
+                        <div className="relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-blue-50 hover:text-blue-700 data-disabled:pointer-events-none data-disabled:opacity-50 gap-2">
                           <Edit className="h-4 w-4 text-blue-600" />
                           <span>Edit Admin</span>
                         </div>
@@ -227,7 +227,7 @@ function AdminTable({ data, emptyState = "initial", onRefresh }: Props) {
                     {/* Delete via Modal */}
                     <div className="relative">
                       <AdminDeleteDialog admin={admin} onDeleted={onRefresh}>
-                        <div className="relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-red-50 hover:text-red-700 data-[disabled]:pointer-events-none data-[disabled]:opacity-50 gap-2">
+                        <div className="relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-red-50 hover:text-red-700 data-disabled:pointer-events-none data-disabled:opacity-50 gap-2">
                           <Trash2 className="h-4 w-4 text-red-600" />
                           <span className="text-red-600">Hapus Admin</span>
                         </div>

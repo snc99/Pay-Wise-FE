@@ -20,8 +20,9 @@ import {
   FiKey,
 } from "react-icons/fi";
 import { toast } from "sonner";
-import { updateAdmin } from "@/lib/api/admin"; // Pastikan ada fungsi updateAdmin
-import type { Admin, Role } from "@/lib/types/admin";
+import { updateAdmin } from "@/lib/api/admin";
+import type { Admin } from "@/lib/types/admin";
+import { Role } from "@/lib/types/role";
 import { cn } from "@/lib/utils";
 import { Download, Loader2 } from "lucide-react";
 import { getErrorMessage } from "@/lib/utils/get-error-message";
@@ -46,7 +47,7 @@ export default function AdminUpdateDialog({
     name: "",
     username: "",
     email: "",
-    password: "", // Password kosong untuk edit (opsional)
+    password: "",
     role: "ADMIN" as Role,
   });
 
