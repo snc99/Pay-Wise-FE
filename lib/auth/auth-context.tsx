@@ -90,6 +90,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  console.log("AUTH STATE:", { user, isLoading });
   return (
     <AuthContext.Provider
       value={{
