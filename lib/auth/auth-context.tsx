@@ -47,25 +47,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const checkAuth = async () => {
       try {
         const res = await getProfile();
-        if (res?.user) {
-          setUser(res.user);
-          return;
-        }
-
-        if (!isLoggingIn) {
-          setUser(null);
-        }
+        if (res?.user) setUser(res.user);
+        else setUser(null);
       } catch {
-        if (!isLoggingIn) {
-          setUser(null);
-        }
+        setUser(null);
       } finally {
         setIsLoading(false);
       }
     };
 
     checkAuth();
-  }, [isLoggingIn]);
+  }, []);
 
   // 🔑 Login
   const login = async (username: string, password: string) => {
