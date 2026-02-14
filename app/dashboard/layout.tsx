@@ -11,6 +11,8 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/side-bar/app-sidebar";
+import type { AuthUser } from "@/lib/types/auth";
+import type { Role } from "@/lib/types/role";
 
 export default function DashboardLayout({
   children,
@@ -50,10 +52,14 @@ export default function DashboardLayout({
   }
 
   const isSuperAdmin = user?.role === "SUPERADMIN";
+  const authUser: AuthUser = {
+    ...user,
+    role: user.role as Role,
+  };
 
   return (
     <SidebarProvider>
-      <AppSidebar user={user} isSuperAdmin={isSuperAdmin} />
+      <AppSidebar user={authUser} isSuperAdmin={isSuperAdmin} />
       <SidebarInset>
         <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
           <div className="flex items-center gap-2 px-4">

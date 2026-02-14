@@ -1,4 +1,4 @@
-export type Role = "SUPERADMIN" | "ADMIN";
+import { Role } from "./role";
 
 export type Admin = {
   id: string;
