@@ -7,6 +7,7 @@ import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth/auth-context";
 import { getErrorMessage } from "@/lib/utils/get-error-message";
+import Loading from "@/components/shared/loading";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -63,14 +64,7 @@ export default function LoginPage() {
 
   // Show loading while checking auth
   if (authLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <Loader2 className="animate-spin h-12 w-12 text-blue-600 mx-auto mb-4" />
-          <p className="text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
+    return <Loading />;
   }
 
   return (
