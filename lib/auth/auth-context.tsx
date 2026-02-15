@@ -15,17 +15,10 @@ import {
   logout as apiLogout,
   getProfile,
 } from "@/lib/api/auth";
-
-export interface User {
-  id: string;
-  name: string;
-  email: string;
-  username: string;
-  role: string;
-}
+import { AuthUser } from "../types/auth";
 
 interface AuthContextType {
-  user: User | null;
+  user: AuthUser | null;
   isLoading: boolean;
   isLoggingIn: boolean;
   authChecked: boolean;
@@ -38,7 +31,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
@@ -49,7 +42,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const checkAuth = async () => {
       try {
         const res = await getProfile();
-        console.log("ME RESPONSE:", res);
         if (res?.user) setUser(res.user);
         else setUser(null);
       } catch {
@@ -94,7 +86,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  console.log("AUTH STATE:", { user, isLoading });
   return (
     <AuthContext.Provider
       value={{
