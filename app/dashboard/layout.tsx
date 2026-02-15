@@ -20,14 +20,14 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
-  const { user, isLoading, finishLogin, isLoggingIn } = useAuth();
+  const { user, isLoading, authChecked, finishLogin, isLoggingIn } = useAuth();
 
   // 🔐 AUTH GUARDED
   useEffect(() => {
-    if (!isLoading && !user) {
+    if (!authChecked && !user) {
       router.replace("/auth/login");
     }
-  }, [user, isLoading, router]);
+  }, [user, isLoading, authChecked, router]);
 
   // 🔄 Sinkronisasi loader login → auth ready
   useEffect(() => {
