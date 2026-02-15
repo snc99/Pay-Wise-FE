@@ -20,7 +20,7 @@ api.interceptors.response.use(
   (error) => {
     const status = error.response?.status;
 
-    if (status === 401) {
+    if (status === 401 && window.location.pathname !== "/auth/login") {
       window.location.href = "/auth/login";
     }
 
