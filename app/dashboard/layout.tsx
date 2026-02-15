@@ -24,10 +24,10 @@ export default function DashboardLayout({
 
   // 🔐 AUTH GUARDED
   useEffect(() => {
-    if (!authChecked && !user) {
+    if (authChecked && !user) {
       router.replace("/auth/login");
     }
-  }, [user, isLoading, authChecked, router]);
+  }, [authChecked, user, router]);
 
   // 🔄 Sinkronisasi loader login → auth ready
   useEffect(() => {
