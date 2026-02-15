@@ -1,3 +1,5 @@
+// lib/api/axios.ts
+
 import axios from "axios";
 
 const API_BASE_URL = (
@@ -16,6 +18,12 @@ export const api = axios.create({
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    const status = error.response?.status;
+
+    if (status === 401) {
+      window.location.href = "/auth/login";
+    }
+
     return Promise.reject(error);
   },
 );
