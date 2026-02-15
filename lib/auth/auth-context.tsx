@@ -47,6 +47,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const checkAuth = async () => {
       try {
         const res = await getProfile();
+        console.log("ME RESPONSE:", res);
         if (res?.user) setUser(res.user);
         else setUser(null);
       } catch {
