@@ -28,6 +28,7 @@ interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   isLoggingIn: boolean;
+  authChecked: boolean;
   login: (username: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   finishLogin: () => void;
@@ -40,6 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [authChecked, setAuthChecked] = useState(false);
   const finishLogin = () => setIsLoggingIn(false);
 
   // 🔐 Initial auth check
@@ -54,6 +56,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(null);
       } finally {
         setIsLoading(false);
+        setAuthChecked(true);
       }
     };
 
@@ -97,6 +100,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       value={{
         user,
         isLoading,
+        authChecked,
         isLoggingIn,
         login,
         logout,
